@@ -3,12 +3,11 @@ import { TextInput } from 'react-native-paper';
 import { useFonts } from 'expo-font';
 import { useEffect, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
-import api from "../../connector/URL";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import IconRight from "react-native-vector-icons/Entypo"
-import { setBaseUrl } from "../../connector/URL";
+import { graduateApi } from "../../connector/URL";
 
 export default function Login() {
     const [schoolNo, setSchoolNo] = useState();
@@ -31,7 +30,7 @@ export default function Login() {
         setLoading(true);
 
         try {
-            const response = await api.post("/login", {
+            const response = await graduateApi.post("/login", {
                 tc: parseInt(schoolNo),
                 password: password,
             });
@@ -40,6 +39,7 @@ export default function Login() {
             if (response.status === 200 && data.token) {
                 Alert.alert("Başarılı", "Giriş başarılı!");
                 await AsyncStorage.setItem("token", data.token);
+                await AsyncStorage.setItem("userType", "other");
                 setTimeout(() => {
                     navigation.navigate("Drawer");
                 }, 1000);
@@ -57,15 +57,6 @@ export default function Login() {
         return <Text>Yükleniyor...</Text>;
     }
 
-    useEffect(() => {
-        const changeBaseUrl = async () => {
-          
-           setBaseUrl('passive');
-           console.log("otherLoginnn");
-        };
-    
-        changeBaseUrl();
-      }, []);
 
     return (
         <View className="flex-1 bg-gray-100">

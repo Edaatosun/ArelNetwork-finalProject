@@ -4,7 +4,7 @@ import Icon from "react-native-vector-icons/Ionicons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 // import storage, { uploadImageToStorage, uploadPdfToStorage, uploadResumeToStorage } from '../../../firebase'; // Firebase Storage
 import * as ImagePicker from 'expo-image-picker';
-import api from "../../connector/URL"; // API bağlantı
+import api from "../../connector/denemeUrl.js"; // API bağlantı
 import { useNavigation } from "@react-navigation/native";
 import * as FileSystem from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
@@ -89,7 +89,7 @@ export default function Profile() {
                 const token = await AsyncStorage.getItem("token");
 
                 try {
-                    const response = await fetch('http://1.1.13.243:3000/upload/photo', {
+                    const response = await fetch('https://bitirme-projesi-17w9.onrender.com/upload/photo', {
                         method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${token}`,
@@ -136,7 +136,7 @@ export default function Profile() {
 
                 const token = await AsyncStorage.getItem("token");
 
-                const response = await fetch('http://1.1.13.243/upload/resume', {
+                const response = await fetch('https://bitirme-projesi-17w9.onrender.com/upload/resume', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -165,6 +165,8 @@ export default function Profile() {
 
 
     const openCvProfile = () => {
+        console.log("heyy");
+        console.log(userInfo.resume);
         Linking.openURL(userInfo?.resume);
     };
 

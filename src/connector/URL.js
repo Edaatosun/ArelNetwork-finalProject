@@ -1,21 +1,25 @@
 import axios from 'axios';
-import { API_URL } from './BASE_URL';
+import { BASE_URL } from '@env';
 
-// Global değişken
-let baseUrl = API_URL;  // BASE_URL.js dosyasından gelen API_URL'i kullanıyoruz
+console.log("BASE_URL: ", BASE_URL.trim()); // BASE_URL'in sonundaki boşlukları temizle
 
-// API URL'yi güncelleme fonksiyonu
-export const setBaseUrl = (url) => {
-    baseUrl = `${API_URL}/${url}`;  // baseURL'yi güncelliyoruz
-    // Axios instance'ını güncelliyoruz
-    api.defaults.baseURL = baseUrl;
-    console.log("Base URL güncellendi:", api.defaults.baseURL);  // Yeni baseURL'i kontrol ediyoruz
-};
-  
-
-// Axios instance
-const api = axios.create({
-  baseURL: baseUrl,  // Axios'u güncellenmiş baseUrl ile kuruyoruz
+export const studentApi = axios.create({
+  baseURL: `${BASE_URL.trim()}/active`,
 });
-console.log("aaaaaaaaaaa",api.defaults);
-export default api;
+
+console.log("studentApi baseURL:", studentApi.defaults.baseURL);
+
+export const graduateApi = axios.create({
+  baseURL: `${BASE_URL.trim()}/passive`,
+});
+console.log("studentApi baseURL:", graduateApi.defaults.baseURL);
+export const commonApi = axios.create({
+  baseURL: `${BASE_URL.trim()}/action`,
+});
+console.log("comooonn:", commonApi.defaults.baseURL);
+export const uploadApi = axios.create({
+  baseURL: `${BASE_URL.trim()}/upload`,
+});
+console.log("studentApi baseURL:", uploadApi.defaults.baseURL);
+
+

@@ -1,18 +1,19 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 const Stack = createNativeStackNavigator();
-import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 // Ekran bileşenleri
 import MainScreen from './screens/main';
 import LoginStudent from './screens/student/login';
 import LoginOther from './screens/other/login';
 import DrawerMenu from './components/drawerMenu';
-import DetailsAdvert from './screens/student/detailsAdvert';
-import DetailsActivity from './screens/student/detailsActivty';
 import EditActivity from './screens/student/editActivity';
 import UserProfile from './screens/student/userProfile';
+
+import DetailsEvent from './screens/student/detailsEvent';
+import DetailsJob from './screens/student/detailsJob';
+import DetailsIntern from './screens/student/detailsIntern';
 
 export default function Navigation() {
 
@@ -23,13 +24,15 @@ export default function Navigation() {
         <Stack.Screen name="Main" component={MainScreen} />
         <Stack.Screen name="LoginStudent" component={LoginStudent} />
         <Stack.Screen name="Drawer" component={DrawerMenu} />
-        <Stack.Screen name="DetailsAdvert" component={DetailsAdvert} />
-        <Stack.Screen name="DetailsActivity" component={DetailsActivity} />
-        <Stack.Screen name='EditActivity' component={EditActivity} />
+
+        <Stack.Screen name="DetailsEvent" component={DetailsEvent} />
+        <Stack.Screen name="DetailsJob" component={DetailsJob} />
+        <Stack.Screen name="DetailsIntern" component={DetailsIntern} />
+        
         <Stack.Screen name='UserProfile' component={UserProfile} />
 
         <Stack.Screen name="LoginOther" component={LoginOther} />
-
+        <Stack.Screen name='EditActivity' component={EditActivity} />
 
       </Stack.Navigator>
     </NavigationContainer>
