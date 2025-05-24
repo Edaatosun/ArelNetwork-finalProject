@@ -23,7 +23,7 @@ export default function CreateIntern() {
     const navigation = useNavigation();
 
     // Form state variables
-    const [eventTitle, setEventTitle] = useState('');
+    const [internTitle, setInternTitle] = useState('');
     const [companyName, setCompanyName] = useState('');
     const [location, setLocation] = useState('');
     const [fromDate, setFromDate] = useState('');
@@ -57,7 +57,7 @@ export default function CreateIntern() {
         }
     };
 
-    const onFromDateChange = (event, selectedDate) => {
+    const onFromDateChange = (intern, selectedDate) => {
         const currentDate = selectedDate || selectedFromDateObj;
         setShowFromDatePicker(Platform.OS === 'ios');
         if (currentDate) {
@@ -66,7 +66,7 @@ export default function CreateIntern() {
         }
     };
 
-    const onToDateChange = (event, selectedDate) => {
+    const onToDateChange = (intern, selectedDate) => {
         const currentDate = selectedDate || selectedToDateObj;
         setShowToDatePicker(Platform.OS === 'ios');
         if (currentDate) {
@@ -75,8 +75,8 @@ export default function CreateIntern() {
         }
     };
 
-    const handleCreateEvent = async () => {
-        if (!eventTitle || !companyName || !location || !fromDate || !toDate || !description || selectedFields.length === 0) {
+    const handleCreateIntern = async () => {
+        if (!internTitle || !companyName || !location || !fromDate || !toDate || !description || selectedFields.length === 0) {
             Alert.alert('Hata', 'Lütfen tüm alanları doldurun ve en az bir bölüm seçin.');
             return;
         }
@@ -86,25 +86,25 @@ export default function CreateIntern() {
             return;
         }
 
-        const newEvent = {
-            eventTitle,
+        const newIntern = {
+            internTitle,
             description,
             company: companyName,
             location,
             fromDate,
             toDate,
-            eventField: selectedFields.join(', '),
+            internField: selectedFields.join(', '),
         };
 
         try {
-            console.log("newEvent:", newEvent);
+            console.log("newIntern:", newIntern);
             const localToken = await AsyncStorage.getItem("token");
             if (!localToken) {
                 Alert.alert("Hata", "Giriş yapmanız gerekiyor.");
                 return;
             }
 
-            const response = await graduateApi.post('/create/eventAd', newEvent, {
+            const response = await graduateApi.post('/create/internAd', newIntern, {
                 headers: {
                     'Authorization': `Bearer ${localToken}`,
                     'Content-Type': 'application/json',
@@ -112,9 +112,9 @@ export default function CreateIntern() {
             });
 
             if (response.status === 200) {
-                Alert.alert('Başarılı', 'Etkinlik başarıyla oluşturuldu.');
+                Alert.alert('Başarılı', 'Staj ilanı başarıyla oluşturuldu.');
                 navigation.goBack();
-                setEventTitle('');
+                setInternTitle('');
                 setCompanyName('');
                 setLocation('');
                 setFromDate('');
@@ -124,10 +124,10 @@ export default function CreateIntern() {
                 setSelectedFromDateObj(null);
                 setSelectedToDateObj(null);
             } else {
-                Alert.alert('Hata', response.data?.message || 'Etkinlik oluşturulurken bir hata oluştu.');
+                Alert.alert('Hata', response.data?.message || 'Staj ilanı oluşturulurken bir hata oluştu.');
             }
         } catch (error) {
-            console.error('Etkinlik oluşturulurken bir hata oluştu:', error);
+            console.error('Staj ilanı oluşturulurken bir hata oluştu:', error);
             Alert.alert('Hata', error.response?.data?.message || 'Beklenmeyen bir hata oluştu.');
         }
     };
@@ -153,6 +153,15 @@ export default function CreateIntern() {
         };
     }, []);
 
+    const displayFromDate = fromDate
+        ? new Date(fromDate).toLocaleDateString('tr-TR')
+        : '';
+
+    const displayToDate = toDate
+        ? new Date(toDate).toLocaleDateString('tr-TR')
+        : '';
+
+
 
     return (
         <KeyboardAvoidingView
@@ -169,13 +178,13 @@ export default function CreateIntern() {
                     // klavye açıldığında TextInput'un görünür olmasını sağlamak için ek ayarlar
                     keyboardShouldPersistTaps="handled" // Klavye açıkken dokunmaların düzgün çalışmasını sağlar
                 >
-                    {/* Etkinlik Başlığı */}
-                    <Text className="text-gray-800 font-semibold mb-2 mt-4">Etkinlik Başlığı</Text>
+                    {/* Staj İlan Başlığı */}
+                    <Text className="text-gray-800 font-semibold mb-2 mt-4">Staj İlanı Başlığı</Text>
                     <TextInput
                         className="bg-white p-4 rounded-lg text-gray-800 shadow-sm border border-gray-300"
-                        placeholder="Etkinlik Başlığı"
-                        value={eventTitle}
-                        onChangeText={setEventTitle}
+                        placeholder="Staj ilanı Başlığı"
+                        value={internTitle}
+                        onChangeText={setInternTitle}
                         placeholderTextColor="#A9A9A9"
                     />
 
@@ -220,8 +229,8 @@ export default function CreateIntern() {
                             <Text className="text-gray-800 font-semibold mb-2">Başlangıç Tarihi</Text>
                             <TextInput
                                 className="bg-white p-4 rounded-lg text-gray-800 shadow-sm border border-gray-300"
-                                placeholder="Tarih Seçin"
-                                value={fromDate}
+                                placeholder="gg.aa.yyyy"
+                                value={displayFromDate}
                                 onTouchStart={() => setShowFromDatePicker(true)}
                                 placeholderTextColor="#A9A9A9"
                             />
@@ -231,8 +240,8 @@ export default function CreateIntern() {
                             <Text className="text-gray-800 font-semibold mb-2">Bitiş Tarihi</Text>
                             <TextInput
                                 className="bg-white p-4 rounded-lg text-gray-800 shadow-sm border border-gray-300"
-                                placeholder="Tarih Seçin"
-                                value={toDate}
+                                placeholder="gg.aa.yyyy"
+                                value={displayToDate}
                                 onTouchStart={() => setShowToDatePicker(true)}
                                 placeholderTextColor="#A9A9A9"
                             />
@@ -262,8 +271,8 @@ export default function CreateIntern() {
                     {/* Açıklama */}
                     <Text className="text-gray-800 font-semibold mb-2 mt-4">Açıklama</Text>
                     <TextInput
-                        className="bg-white p-4 rounded-lg text-gray-800 h-40 shadow-sm border border-gray-300"
-                        placeholder="Etkinlik hakkında detaylı bilgi..."
+                        className="bg-white p-4 rounded-lg text-gray-800 h-32 shadow-sm border border-gray-300"
+                        placeholder="Staj ilanı hakkında detaylı bilgi..."
                         value={description}
                         onChangeText={setDescription}
                         placeholderTextColor="#A9A9A9"
@@ -271,12 +280,12 @@ export default function CreateIntern() {
                         textAlignVertical="top"
                     />
 
-                    {/* Etkinlik Oluştur Butonu */}
+                    {/* Staj ilanı Oluştur Butonu */}
                     <TouchableOpacity
-                        onPress={handleCreateEvent}
-                        className="bg-green-600 p-4 rounded-lg mt-6 mb-10 items-center shadow-md active:bg-green-700"
+                        onPress={handleCreateIntern}
+                        className="bg-green-600 p-4 rounded-lg mt-4 mb-10 items-center shadow-md active:bg-green-700"
                     >
-                        <Text className="text-white text-lg font-bold">Etkinlik Oluştur</Text>
+                        <Text className="text-white text-lg font-bold">Oluştur</Text>
                     </TouchableOpacity>
                 </ScrollView>
             </View>

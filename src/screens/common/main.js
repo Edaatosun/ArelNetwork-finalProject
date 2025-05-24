@@ -19,7 +19,7 @@ export default function Main() {
       {/* Logo ve Başlık */}
       <View className="items-center justify-center mt-52">
         <Image
-          source={require("../../assets/images/image.png")}
+          source={require("../../../assets/images/image.png")}
           className="w-52 h-52 mb-5"
           resizeMode="contain"
         />

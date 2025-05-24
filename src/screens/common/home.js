@@ -3,10 +3,8 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, Image, Modal, TouchableWithoutFeedback } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
-import ModalSelector from 'react-native-modal-selector'; // This might not be needed if using DropDownPicker exclusively
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from '@react-navigation/native';
-import { formatDate } from '../../components/date';
 import { commonApi } from '../../connector/URL';
 import DropDownPicker from 'react-native-dropdown-picker';
 
@@ -62,6 +60,8 @@ export default function Home() {
         const companies = Array.from(new Set(combined.map(item => item.company || item.internCompany).filter(Boolean)));
         return [{ key: "Tümü", label: "Tümü", value: null }, ...companies.map(company => ({ key: company, label: company, value: company }))];
     }, [jobData, internshipData, activities]);
+
+
 
 
     // Fetch functions
@@ -307,8 +307,12 @@ export default function Home() {
             title = item.eventTitle;
             company = item.company;
             location = item.location;
-            startDate = formatDate(item.fromDate);
-            endDate = formatDate(item.toDate);
+            startDate = item.fromDate
+                ? `${new Date(item.fromDate).toLocaleDateString('tr-TR')}`
+                : 'Tarih Yok';
+            endDate = item.toDate
+                ? `${new Date(item.toDate).toLocaleDateString('tr-TR')}`
+                : 'Tarih Yok';
             field = item.eventField;
             targetScreen = "DetailsEvent";
 
@@ -316,19 +320,27 @@ export default function Home() {
             title = item.jobTitle;
             company = item.company;
             location = item.location;
-            startDate = formatDate(item.fromDate);
-            endDate = formatDate(item.toDate);
+            startDate = item.fromDate
+                ? `${new Date(item.fromDate).toLocaleDateString('tr-TR')}`
+                : 'Tarih Yok';
+            endDate = item.toDate
+                ? `${new Date(item.toDate).toLocaleDateString('tr-TR')}`
+                : 'Tarih Yok';
             field = item.jobField;
             targetScreen = "DetailsJob";
 
         } else if (isInternship) {
             title = item.internTitle;
-            company = item.internCompany;
+            company = item.company;
             location = item.location;
-            startDate = formatDate(item.fromDate);
-            endDate = formatDate(item.toDate);
+           startDate = item.fromDate
+                ? `${new Date(item.fromDate).toLocaleDateString('tr-TR')}`
+                : 'Tarih Yok';
+            endDate = item.toDate
+                ? `${new Date(item.toDate).toLocaleDateString('tr-TR')}`
+                : 'Tarih Yok';
             field = item.internField;
-            targetScreen = 'DetailsInternship';
+            targetScreen = 'DetailsIntern';
         }
 
         return (
@@ -369,7 +381,7 @@ export default function Home() {
                         <Icon name="calendar" size={16} color="black" />
                         <Text className="ml-2 text-black">
                             {startDate}
-                            {!isActivity && endDate && ` - ${endDate}`}
+                            { ` - ${endDate}`}
                         </Text>
                     </View>
 

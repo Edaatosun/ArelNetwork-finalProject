@@ -8,7 +8,7 @@ import {
     Alert,
     KeyboardAvoidingView,
     Platform,
-    Keyboard, // Klavye olaylarını dinlemek için eklendi
+    Keyboard,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -16,7 +16,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { graduateApi } from "../../connector/URL";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// react-native-paper importları
+
 import { Checkbox, Dialog, Portal, Button as PaperButton } from 'react-native-paper';
 
 export default function CreateEvent() {
@@ -26,8 +26,8 @@ export default function CreateEvent() {
     const [eventTitle, setEventTitle] = useState('');
     const [companyName, setCompanyName] = useState('');
     const [location, setLocation] = useState('');
-    const [fromDate, setFromDate] = useState('');
-    const [toDate, setToDate] = useState('');
+    const [fromDate, setFromDate] = useState(''); // Bu format YYYY-MM-DD olarak kalabilir
+    const [toDate, setToDate] = useState('');   // Bu format YYYY-MM-DD olarak kalabilir
     const [description, setDescription] = useState('');
 
     // Date Picker Visibility
@@ -62,6 +62,7 @@ export default function CreateEvent() {
         setShowFromDatePicker(Platform.OS === 'ios');
         if (currentDate) {
             setSelectedFromDateObj(currentDate);
+            // API'ye göndereceğimiz format YYYY-MM-DD
             setFromDate(currentDate.toISOString().split('T')[0]);
         }
     };
@@ -71,6 +72,7 @@ export default function CreateEvent() {
         setShowToDatePicker(Platform.OS === 'ios');
         if (currentDate) {
             setSelectedToDateObj(currentDate);
+            // API'ye göndereceğimiz format YYYY-MM-DD
             setToDate(currentDate.toISOString().split('T')[0]);
         }
     };
@@ -91,8 +93,8 @@ export default function CreateEvent() {
             description,
             company: companyName,
             location,
-            fromDate,
-            toDate,
+            fromDate, // API'ye YYYY-MM-DD formatında gidiyor
+            toDate,   // API'ye YYYY-MM-DD formatında gidiyor
             eventField: selectedFields.join(', '),
         };
 
@@ -153,24 +155,34 @@ export default function CreateEvent() {
         };
     }, []);
 
+    // UI'da gösterilecek fromDate'in formatlanmış hali
+    const displayFromDate = fromDate
+        ? new Date(fromDate).toLocaleDateString('tr-TR')
+        : ''; // Başlangıçta boş string gösterilebilir
+
+    // UI'da gösterilecek toDate'in formatlanmış hali
+    const displayToDate = toDate
+        ? new Date(toDate).toLocaleDateString('tr-TR')
+        : ''; // Başlangıçta boş string gösterilebilir
+
 
     return (
         <KeyboardAvoidingView
             className="flex-1"
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0} // iOS için offset gerekebilir
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
             <View className="flex-1 px-5 bg-gray-100">
                 <ScrollView
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{
-                        paddingBottom: 50 + keyboardHeight, // Klavye yüksekliği kadar ekstra padding
+                        paddingBottom: 50 + keyboardHeight,
                     }}
-                    // klavye açıldığında TextInput'un görünür olmasını sağlamak için ek ayarlar
-                    keyboardShouldPersistTaps="handled" // Klavye açıkken dokunmaların düzgün çalışmasını sağlar
+
+                    keyboardShouldPersistTaps="handled"
                 >
                     {/* Etkinlik Başlığı */}
-                    <Text className="text-gray-800 font-semibold mb-2 mt-4">Etkinlik Başlığı</Text>
+                    <Text className="text-gray-800 font-semibold mb-2 mt-2">Etkinlik Başlığı</Text>
                     <TextInput
                         className="bg-white p-4 rounded-lg text-gray-800 shadow-sm border border-gray-300"
                         placeholder="Etkinlik Başlığı"
@@ -220,8 +232,8 @@ export default function CreateEvent() {
                             <Text className="text-gray-800 font-semibold mb-2">Başlangıç Tarihi</Text>
                             <TextInput
                                 className="bg-white p-4 rounded-lg text-gray-800 shadow-sm border border-gray-300"
-                                placeholder="Tarih Seçin"
-                                value={fromDate}
+                                placeholder="gg.aa.yyyy"
+                                value={displayFromDate} // <-- Formatlanmış hali burada kullanılıyor
                                 onTouchStart={() => setShowFromDatePicker(true)}
                                 placeholderTextColor="#A9A9A9"
                             />
@@ -231,8 +243,8 @@ export default function CreateEvent() {
                             <Text className="text-gray-800 font-semibold mb-2">Bitiş Tarihi</Text>
                             <TextInput
                                 className="bg-white p-4 rounded-lg text-gray-800 shadow-sm border border-gray-300"
-                                placeholder="Tarih Seçin"
-                                value={toDate}
+                                placeholder="gg.aa.yyyy"
+                                value={displayToDate} // <-- Formatlanmış hali burada kullanılıyor
                                 onTouchStart={() => setShowToDatePicker(true)}
                                 placeholderTextColor="#A9A9A9"
                             />
@@ -262,7 +274,7 @@ export default function CreateEvent() {
                     {/* Açıklama */}
                     <Text className="text-gray-800 font-semibold mb-2 mt-4">Açıklama</Text>
                     <TextInput
-                        className="bg-white p-4 rounded-lg text-gray-800 h-40 shadow-sm border border-gray-300"
+                        className="bg-white p-4 rounded-lg text-gray-800 h-32 shadow-sm border border-gray-300"
                         placeholder="Etkinlik hakkında detaylı bilgi..."
                         value={description}
                         onChangeText={setDescription}
@@ -274,9 +286,9 @@ export default function CreateEvent() {
                     {/* Etkinlik Oluştur Butonu */}
                     <TouchableOpacity
                         onPress={handleCreateEvent}
-                        className="bg-green-600 p-4 rounded-lg mt-6 mb-10 items-center shadow-md active:bg-green-700"
+                        className="bg-green-600 p-4 rounded-lg mt-4 mb-10 items-center shadow-md active:bg-green-700"
                     >
-                        <Text className="text-white text-lg font-bold">Etkinlik Oluştur</Text>
+                        <Text className="text-white text-lg font-bold">Oluştur</Text>
                     </TouchableOpacity>
                 </ScrollView>
             </View>

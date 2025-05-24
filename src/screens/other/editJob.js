@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -6,42 +6,37 @@ import {
     TouchableOpacity,
     ScrollView,
     Alert,
-    KeyboardAvoidingView,
+    Keyboard,
     Platform,
-    Keyboard, // Klavye olaylarını dinlemek için eklendi
+    KeyboardAvoidingView,
+    ActivityIndicator 
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { graduateApi } from "../../connector/URL";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-// react-native-paper importları
 import { Checkbox, Dialog, Portal, Button as PaperButton } from 'react-native-paper';
 
-export default function CreateJob() {
+export default function EditJob() {
     const navigation = useNavigation();
+    const route = useRoute();
+    const { item_id } = route.params;
 
-    // Form state variables
     const [jobTitle, setJobTitle] = useState('');
     const [companyName, setCompanyName] = useState('');
     const [location, setLocation] = useState('');
     const [fromDate, setFromDate] = useState('');
     const [toDate, setToDate] = useState('');
     const [description, setDescription] = useState('');
-
-    // Date Picker Visibility
     const [showFromDatePicker, setShowFromDatePicker] = useState(false);
     const [showToDatePicker, setShowToDatePicker] = useState(false);
     const [selectedFromDateObj, setSelectedFromDateObj] = useState(null);
     const [selectedToDateObj, setSelectedToDateObj] = useState(null);
-
-    // Bölümler için state
     const [selectedFields, setSelectedFields] = useState([]);
     const [showFieldDialog, setShowFieldDialog] = useState(false);
-
-    // Klavye yüksekliğini tutmak için state
     const [keyboardHeight, setKeyboardHeight] = useState(0);
+    const [loading, setLoading] = useState(false); // Yüklenme durumu için state
 
     const availableFields = [
         "Mühendislik", "Yazılım Geliştirme", "Tasarım", "Pazarlama",
@@ -59,23 +54,97 @@ export default function CreateJob() {
 
     const onFromDateChange = (job, selectedDate) => {
         const currentDate = selectedDate || selectedFromDateObj;
-        setShowFromDatePicker(Platform.OS === 'ios');
+        setShowFromDatePicker(false);
         if (currentDate) {
             setSelectedFromDateObj(currentDate);
-            setFromDate(currentDate.toISOString().split('T')[0]);
+            setFromDate(currentDate.toISOString().split('T')[0]); // YYYY-MM-DD formatında sakla
         }
     };
 
     const onToDateChange = (job, selectedDate) => {
         const currentDate = selectedDate || selectedToDateObj;
-        setShowToDatePicker(Platform.OS === 'ios');
+        setShowToDatePicker(false);
         if (currentDate) {
             setSelectedToDateObj(currentDate);
-            setToDate(currentDate.toISOString().split('T')[0]);
+            setToDate(currentDate.toISOString().split('T')[0]); // YYYY-MM-DD formatında sakla
         }
     };
 
-    const handleCreateJob = async () => {
+
+    const fetchJobDetails = async () => {
+        try {
+            console.log("İŞ ilanı detayları çekiliyor...");
+            setLoading(true); // Yükleme başlıyor
+            const localToken = await AsyncStorage.getItem("token");
+            if (!localToken) {
+                Alert.alert("Hata", "Kimlik doğrulama token'ı bulunamadı. Lütfen tekrar giriş yapın.");
+                navigation.navigate('Login'); // Örnek olarak giriş sayfasına yönlendirme
+                return;
+            }
+
+            const response = await graduateApi.get(`/update/job/${item_id}`, {
+                headers: {
+                    'Authorization': `Bearer ${localToken}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            const jobDataArray = response.data.job;
+
+            if (!jobDataArray || jobDataArray.length === 0) {
+                Alert.alert("Hata", "iş ilanı verisi bulunamadı veya boş döndü.");
+                navigation.goBack(); // Bir önceki sayfaya dönebiliriz
+                return;
+            }
+            const jobData = jobDataArray[0]; // **Buradaki değişiklik**
+
+            console.log("API'den Gelen Ham Veri:", response.data);
+            console.log("İşlenen job Data:", jobData); // Kontrol için
+
+            setJobTitle(jobData.jobTitle);
+            setCompanyName(jobData.company);
+            setLocation(jobData.location);
+            setFromDate(jobData.fromDate); // API'den gelen formatı doğrudan set et
+            setToDate(jobData.toDate);     // API'den gelen formatı doğrudan set et
+            setDescription(jobData.description);
+            setSelectedFields(jobData.jobField ? jobData.jobField.split(',').map(f => f.trim()) : []);
+
+            // Eğer tarih objelerini de başlangıçta set etmek isterseniz (opsiyonel)
+            if (jobData.fromDate) {
+                setSelectedFromDateObj(new Date(jobData.fromDate));
+            }
+            if (jobData.toDate) {
+                setSelectedToDateObj(new Date(jobData.toDate));
+            }
+
+        } catch (error) {
+            console.error("İlan verisi alınamadı:", error.response?.data?.message || error.message);
+            Alert.alert("Hata", "İş ilanı detayları yüklenirken bir sorun oluştu.");
+        } finally {
+            setLoading(false); // Yükleme bitiyor
+        }
+    };
+
+    useEffect(() => {
+        fetchJobDetails();
+
+        const keyboardDidShowListener = Keyboard.addListener(
+            'keyboardDidShow',
+            (e) => setKeyboardHeight(e.endCoordinates.height)
+        );
+        const keyboardDidHideListener = Keyboard.addListener(
+            'keyboardDidHide',
+            () => setKeyboardHeight(0)
+        );
+
+        return () => {
+            keyboardDidHideListener.remove();
+            keyboardDidShowListener.remove();
+        };
+    }, [item_id]); 
+
+
+
+    const handleEditJob = async () => {
         if (!jobTitle || !companyName || !location || !fromDate || !toDate || !description || selectedFields.length === 0) {
             Alert.alert('Hata', 'Lütfen tüm alanları doldurun ve en az bir bölüm seçin.');
             return;
@@ -86,7 +155,7 @@ export default function CreateJob() {
             return;
         }
 
-        const newJob = {
+        const updatedJob = { 
             jobTitle,
             description,
             company: companyName,
@@ -97,14 +166,14 @@ export default function CreateJob() {
         };
 
         try {
-            console.log("newJob:", newJob);
+            setLoading(true); // Güncelleme işlemi başlıyor
             const localToken = await AsyncStorage.getItem("token");
             if (!localToken) {
                 Alert.alert("Hata", "Giriş yapmanız gerekiyor.");
                 return;
             }
 
-            const response = await graduateApi.post('/create/jobAd', newJob, {
+            const response = await graduateApi.post(`/update/job/${item_id}`, updatedJob, {
                 headers: {
                     'Authorization': `Bearer ${localToken}`,
                     'Content-Type': 'application/json',
@@ -112,76 +181,55 @@ export default function CreateJob() {
             });
 
             if (response.status === 200) {
-                Alert.alert('Başarılı', 'İş ilanı başarıyla oluşturuldu.');
+                Alert.alert('Başarılı', 'İş ilanı başarıyla güncellendi.');
                 navigation.goBack();
-                setJobTitle('');
-                setCompanyName('');
-                setLocation('');
-                setFromDate('');
-                setToDate('');
-                setDescription('');
-                setSelectedFields([]);
-                setSelectedFromDateObj(null);
-                setSelectedToDateObj(null);
             } else {
-                Alert.alert('Hata', response.data?.message || 'İş ilanı oluşturulurken bir hata oluştu.');
+                Alert.alert('Hata', response.data?.message || 'İş ilanı güncellenirken bir hata oluştu.');
             }
         } catch (error) {
-            console.error('İŞ ilanı oluşturulurken bir hata oluştu:', error);
+            console.error('İş ilanı güncellenirken bir hata oluştu:', error.response?.data?.message || error.message);
             Alert.alert('Hata', error.response?.data?.message || 'Beklenmeyen bir hata oluştu.');
+        } finally {
+            setLoading(false); // Güncelleme işlemi bitiyor
         }
     };
 
-    // Klavye açıldığında ve kapandığında padding'i ayarlamak için useEffect kullanıyoruz
-    React.useEffect(() => {
-        const keyboardDidShowListener = Keyboard.addListener(
-            'keyboardDidShow',
-            (e) => {
-                setKeyboardHeight(e.endCoordinates.height);
-            }
-        );
-        const keyboardDidHideListener = Keyboard.addListener(
-            'keyboardDidHide',
-            () => {
-                setKeyboardHeight(0);
-            }
-        );
-
-        return () => {
-            keyboardDidHideListener.remove();
-            keyboardDidShowListener.remove();
-        };
-    }, []);
-
-    const displayFromDate = fromDate
-        ? new Date(fromDate).toLocaleDateString('tr-TR')
-        : '';
-
-    const displayToDate = toDate
-        ? new Date(toDate).toLocaleDateString('tr-TR')
-        : '';
-
-
+    // Tarihlerin kullanıcıya gösterilecek formatı
+    const displayFromDate = fromDate ? new Date(fromDate).toLocaleDateString('tr-TR') : '';
+    const displayToDate = toDate ? new Date(toDate).toLocaleDateString('tr-TR') : '';
     return (
         <KeyboardAvoidingView
             className="flex-1"
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0} // iOS için offset gerekebilir
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
-            <View className="flex-1 px-5 bg-gray-100">
+            <View className="flex-1  bg-gray-100">
+                {/* Yükleniyor Göstergesi */}
+                {loading && (
+                    <View className="absolute inset-0 z-10 justify-center items-center bg-black bg-opacity-30">
+                        <ActivityIndicator size="large" color="#0000ff" />
+                    </View>
+                )}
+                <View className="p-4 flex-row items-center mt-5 bg-gray-100 z-10">
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Icon name="arrow-back" size={30} color="black" />
+                    </TouchableOpacity>
+                    <Text className="text-xl font-bold ml-4">Güncelle</Text>
+
+                </View>
                 <ScrollView
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{
-                        paddingBottom: 50 + keyboardHeight, // Klavye yüksekliği kadar ekstra padding
+                        paddingBottom: 50 + keyboardHeight,
+                        paddingHorizontal: 20
                     }}
-                    // klavye açıldığında TextInput'un görünür olmasını sağlamak için ek ayarlar
-                    keyboardShouldPersistTaps="handled" // Klavye açıkken dokunmaların düzgün çalışmasını sağlar
+                    keyboardShouldPersistTaps="handled"
                 >
-                    {/* İş ilanı Başlığı */}
+                    {/* İş İlanı Başlığı */}
                     <Text className="text-gray-800 font-semibold mb-2 mt-4">İş İlanı Başlığı</Text>
                     <TextInput
-                        className="bg-white p-4 rounded-lg text-gray-800 shadow-sm border border-gray-300"
-                        placeholder="İş İlanı Başlığı"
+                        className="bg-white p-4 rounded-lg text-gray-800 shadow-sm border border-gray-300 w-full"
+                        placeholder="İş ilanı Başlığı"
                         value={jobTitle}
                         onChangeText={setJobTitle}
                         placeholderTextColor="#A9A9A9"
@@ -190,7 +238,7 @@ export default function CreateJob() {
                     {/* Bölüm Seçimi */}
                     <Text className="text-gray-800 font-semibold mt-4 mb-2">Bölümler</Text>
                     <TouchableOpacity
-                        className="bg-white p-4 rounded-lg shadow-sm border border-gray-300 flex-row justify-between items-center"
+                        className="bg-white p-4 rounded-lg shadow-sm border border-gray-300 flex-row justify-between items-center w-full"
                         onPress={() => setShowFieldDialog(true)}
                     >
                         <Text className={`flex-1 ${selectedFields.length > 0 ? 'text-gray-800' : 'text-gray-400'}`}>
@@ -202,7 +250,7 @@ export default function CreateJob() {
                     {/* Firma Adı */}
                     <Text className="text-gray-800 font-semibold mb-2 mt-4">Firma Adı</Text>
                     <TextInput
-                        className="bg-white p-4 rounded-lg text-gray-800 shadow-sm border border-gray-300"
+                        className="bg-white p-4 rounded-lg text-gray-800 shadow-sm border border-gray-300 w-full"
                         placeholder="Şirket Adı"
                         value={companyName}
                         onChangeText={setCompanyName}
@@ -211,7 +259,7 @@ export default function CreateJob() {
 
                     {/* Yer (Konum) */}
                     <Text className="text-gray-800 font-semibold mb-2 mt-4">Yer</Text>
-                    <View className="bg-white p-2 rounded-lg shadow-sm flex-row items-center justify-between border border-gray-300">
+                    <View className="bg-white p-2 rounded-lg shadow-sm flex-row items-center justify-between border border-gray-300 w-full">
                         <TextInput
                             className="flex-1 text-gray-800"
                             placeholder="Konum"
@@ -227,7 +275,7 @@ export default function CreateJob() {
                         <View className="flex-1 mr-2">
                             <Text className="text-gray-800 font-semibold mb-2">Başlangıç Tarihi</Text>
                             <TextInput
-                                className="bg-white p-4 rounded-lg text-gray-800 shadow-sm border border-gray-300"
+                                className="bg-white p-4 rounded-lg text-gray-800 shadow-sm border border-gray-300 w-full"
                                 placeholder="gg.aa.yyyy"
                                 value={displayFromDate}
                                 onTouchStart={() => setShowFromDatePicker(true)}
@@ -238,7 +286,7 @@ export default function CreateJob() {
                         <View className="flex-1 ml-2">
                             <Text className="text-gray-800 font-semibold mb-2">Bitiş Tarihi</Text>
                             <TextInput
-                                className="bg-white p-4 rounded-lg text-gray-800 shadow-sm border border-gray-300"
+                                className="bg-white p-4 rounded-lg text-gray-800 shadow-sm border border-gray-300 w-full"
                                 placeholder="gg.aa.yyyy"
                                 value={displayToDate}
                                 onTouchStart={() => setShowToDatePicker(true)}
@@ -250,7 +298,7 @@ export default function CreateJob() {
                     {/* Tarih Seçici Modals */}
                     {showFromDatePicker && (
                         <DateTimePicker
-                            value={selectedFromDateObj || new Date()}
+                            value={selectedFromDateObj || (fromDate ? new Date(fromDate) : new Date())}
                             mode="date"
                             is24Hour={true}
                             onChange={onFromDateChange}
@@ -259,7 +307,7 @@ export default function CreateJob() {
                     )}
                     {showToDatePicker && (
                         <DateTimePicker
-                            value={selectedToDateObj || new Date()}
+                            value={selectedToDateObj || (toDate ? new Date(toDate) : new Date())}
                             mode="date"
                             is24Hour={true}
                             onChange={onToDateChange}
@@ -270,7 +318,7 @@ export default function CreateJob() {
                     {/* Açıklama */}
                     <Text className="text-gray-800 font-semibold mb-2 mt-4">Açıklama</Text>
                     <TextInput
-                        className="bg-white p-4 rounded-lg text-gray-800 h-32 shadow-sm border border-gray-300"
+                        className="bg-white p-4 rounded-lg text-gray-800 h-32 shadow-sm border border-gray-300 w-full"
                         placeholder="İş ilanı hakkında detaylı bilgi..."
                         value={description}
                         onChangeText={setDescription}
@@ -279,12 +327,13 @@ export default function CreateJob() {
                         textAlignVertical="top"
                     />
 
-                    {/*  Oluştur Butonu */}
+                    
                     <TouchableOpacity
-                        onPress={handleCreateJob}
-                        className="bg-green-600 p-4 rounded-lg mt-4 mb-10 items-center shadow-md active:bg-green-700"
+                        onPress={handleEditJob}
+                        className="bg-green-600 p-4 rounded-lg mt-4 mb-10 items-center shadow-md active:bg-green-700 w-full"
+                        disabled={loading}
                     >
-                        <Text className="text-white text-lg font-bold">Oluştur</Text>
+                        <Text className="text-white text-lg font-bold">Güncelle</Text>
                     </TouchableOpacity>
                 </ScrollView>
             </View>

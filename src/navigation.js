@@ -1,38 +1,39 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 const Stack = createNativeStackNavigator();
 import { NavigationContainer } from '@react-navigation/native';
-
-
-// Ekran bileşenleri
-import MainScreen from './screens/main';
-import LoginStudent from './screens/student/login';
-import LoginOther from './screens/other/login';
+import Main from './screens/common/main';
+import Login from './screens/student/login';
 import DrawerMenu from './components/drawerMenu';
-import EditActivity from './screens/student/editActivity';
+import DetailsEvent from './screens/common/detailsEvent';
+import DetailsJob from './screens/common/detailsJob';
+import DetailsIntern from './screens/common/detailsIntern';
+
+import LoginOther from './screens/other/login';
+import EditEvent from './screens/other/editEvent';
+import EditJob from './screens/other/editJob';
+import EditIntern from './screens/other/editIntern';
 import UserProfile from './screens/student/userProfile';
-
-import DetailsEvent from './screens/student/detailsEvent';
-import DetailsJob from './screens/student/detailsJob';
-import DetailsIntern from './screens/student/detailsIntern';
-
 export default function Navigation() {
 
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
 
-        <Stack.Screen name="Main" component={MainScreen} />
-        <Stack.Screen name="LoginStudent" component={LoginStudent} />
+        <Stack.Screen name="Main" component={Main} />
+        <Stack.Screen name="LoginStudent" component={Login} />
         <Stack.Screen name="Drawer" component={DrawerMenu} />
 
         <Stack.Screen name="DetailsEvent" component={DetailsEvent} />
         <Stack.Screen name="DetailsJob" component={DetailsJob} />
         <Stack.Screen name="DetailsIntern" component={DetailsIntern} />
-        
-        <Stack.Screen name='UserProfile' component={UserProfile} />
 
         <Stack.Screen name="LoginOther" component={LoginOther} />
-        <Stack.Screen name='EditActivity' component={EditActivity} />
+        <Stack.Screen name='EditEvent' component={EditEvent} />
+        <Stack.Screen name='EditJob' component={EditJob} />
+        <Stack.Screen name='EditIntern' component={EditIntern} />
+
+
+        <Stack.Screen name='UserProfile' component={UserProfile} />
 
       </Stack.Navigator>
     </NavigationContainer>
