@@ -1,112 +1,147 @@
+// 🔧 Optimize edilmiş DetailsJob bileşeni: Çökme sorunlarına karşı güncellenmiş sürüm
+
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Animated, ScrollView, ActivityIndicator, Alert, Image, Dimensions, Linking } from 'react-native'; // Linking eklendi
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image, Dimensions, Linking, Modal } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { commonApi, graduateApi } from "../../connector/URL";
-import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import DefaultJobImage from '../../../assets/images/default_job_image.jpg';
 import * as DocumentPicker from 'expo-document-picker';
-import { Modal } from 'react-native';
 
 export default function DetailsJob() {
     const navigation = useNavigation();
     const route = useRoute();
     const { item_id } = route.params;
     const isEditMode = route.params?.isEditMode || false;
-    const fadeAnim = useRef(new Animated.Value(0)).current;
+ 
+
     const [job, setJob] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [isApplied, setIsApplied] = useState(false);
     const [resumeData, setResumeData] = useState(null);
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+    const [isJobOwner, setIsJobOwner] = useState(false);
+    const [userType, setUserType] = useState(null);
+
+    useEffect(() => {
+        const getUserType = async () => {
+            const type = await AsyncStorage.getItem('userType');
+            setUserType(type);
+        };
+        getUserType();
+    }, []);
 
     useFocusEffect(
         useCallback(() => {
-            const fetchJobDetails = async () => {
+            let isActive = true;
+
+            if (!userType) return; // userType yüklenmeden fetchData çağrılmasın
+            console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",userType);
+
+            const fetchData = async () => {
+                const localToken = await AsyncStorage.getItem("token");
+                if (!isActive || !localToken) return;
+
+                await fetchJobDetails(localToken);
+                if (!isActive) return;
+
+                if (userType !== "student") {
+                    await checkIsOwner(localToken);
+                } else {
+                    setIsJobOwner(false);
+                }
+
+                if (!isActive) return;
+                await checkIfApplied(localToken);
+            };
+
+            const fetchJobDetails = async (token) => {
                 try {
                     setLoading(true);
-                    const localToken = await AsyncStorage.getItem("token");
-
+                    console.log("hey hey")
+                    console.log(item_id);
                     const response = await commonApi.get(`/get/job/${item_id}`, {
                         headers: {
-                            'Authorization': `Bearer ${localToken}`,
+                            'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json',
                         },
                     });
-
-                    const jobData = response.data.job;
-                    setJob(jobData);
-                    console.log("İlan Verisi:", jobData);
+                    if (isActive) {
+                        console.log("hey2")
+                        setJob(response.data.job);
+                    }
                 } catch (error) {
+                    console.log("hey3")
                     console.error("İlan verisi alınamadı:", error);
-                    setJob(null);
-                    Alert.alert("Hata", "İlan detayları yüklenirken bir sorun oluştu.");
+                    if (isActive) {
+                        Alert.alert("Hata", "İlan detayları yüklenirken bir sorun oluştu.");
+                        setJob(null);
+                    }
                 } finally {
-                    setLoading(false);
+                    if (isActive) setLoading(false);
                 }
             };
 
-            const checkIfApplied = async () => {
+            const checkIsOwner = async (token) => {
                 try {
-                    const localToken = await AsyncStorage.getItem("token");
-                    if (!localToken) {
-                        console.warn("Token bulunamadı, başvuru durumu kontrol edilemiyor.");
-                        setIsApplied(false);
-                        setResumeData(null); // Token yoksa CV verisi de yoktur
-                        return;
+                    const response = await graduateApi.get(`/jobs/${item_id}/isOwner`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                    });
+                    if (isActive) setIsJobOwner(response.data.isOwner);
+                } catch (error) {
+                    console.error("İlan sahibi kontrolü hatası:", error);
+                    if (isActive) {
+                        setIsJobOwner(false);
+                        Alert.alert("Hata", "İlan sahibi kontrol edilirken bir sorun oluştu.");
                     }
+                }
+            };
 
+            const checkIfApplied = async (token) => {
+                try {
                     const response = await commonApi.get(`/check/myJob/${item_id}`, {
                         headers: {
-                            'Authorization': `Bearer ${localToken}`,
+                            'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json',
                         },
                     });
-
-                    // Backend'den gelen yanıtın 200 ve message'ının "Başvuru yapılmış." olması durumunda
-                    if (response.status === 200 && response.data.message === "Başvuru yapılmış.") {
-                        setIsApplied(true);
-                        setResumeData(response.data.resume); // Backend'den gelen resume URL'sini kaydet
-                        console.log("Başvuruldu: true, CV Yolu:", response.data.resume);
-                    } else {
-                        setIsApplied(false);
-                        setResumeData(null);
-                        console.log("Başvuruldu: false");
+                    if (isActive) {
+                        if (response.status === 200 && response.data.message === "Başvuru yapılmış.") {
+                            setIsApplied(true);
+                            setResumeData(response.data.resume);
+                        } else {
+                            setIsApplied(false);
+                            setResumeData(null);
+                        }
                     }
                 } catch (error) {
-                    console.error("Başvuru durumu kontrol edilirken hata:", error);
-                    // Backend 404 döndürdüğünde veya başka bir hata olduğunda başvurulmamış sayarız
-                    if (error.response && error.response.status === 404) {
+                    if (isActive) {
                         setIsApplied(false);
                         setResumeData(null);
-                        console.log("Başvuru bulunamadı (404).");
-                    } else {
-                        setIsApplied(false);
-                        setResumeData(null);
-                        Alert.alert("Hata", "Başvuru durumu kontrol edilirken bir sorun oluştu.");
+                        if (!(error.response && error.response.status === 404)) {
+                            Alert.alert("Hata", "Başvuru durumu kontrol edilirken bir sorun oluştu.");
+                        }
                     }
                 }
             };
 
-            fetchJobDetails();
-            checkIfApplied();
-
+            fetchData();
             return () => {
+                isActive = false;
                 setJob(null);
                 setIsApplied(false);
                 setResumeData(null);
+                setIsJobOwner(false);
             };
-        }, [item_id])
+        }, [item_id, userType])
     );
 
-    useEffect(() => {
-        Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
-        }).start();
-    }, [fadeAnim]);
+  
 
     const handleApply = async () => {
         if (isApplied) {
@@ -225,7 +260,6 @@ export default function DetailsJob() {
         );
     }
 
-
     const handleDelete = async () => {
         try {
             setLoading(true);
@@ -274,7 +308,7 @@ export default function DetailsJob() {
                 ) : null}
             </View>
 
-            <Animated.View style={{ opacity: fadeAnim }} className="flex-1">
+            <View className="flex-1">
                 <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
                     <View className="w-full flex-row justify-center mt-4">
                         {job.imageUrl ? (
@@ -291,9 +325,11 @@ export default function DetailsJob() {
                             />
                         )}
                     </View>
-
                     {/* Ayırıcı Çizgi */}
                     <View className="border-b border-gray-300 mx-4 my-4" />
+
+
+
 
                     {/* Temel Bilgiler (Tek Sütun) */}
                     <View className="p-4">
@@ -326,6 +362,9 @@ export default function DetailsJob() {
                         )}
                     </View>
 
+
+
+
                     {/* Açıklama ve Diğer Detaylar */}
                     <View className="px-4">
                         {job.description && (
@@ -337,13 +376,14 @@ export default function DetailsJob() {
                         {/* Diğer detaylar, capabilities, requiredDocuments vb. buraya eklenebilir */}
                     </View>
                 </ScrollView>
-            </Animated.View>
+            </View>
 
-            {!isEditMode && (
+
+            {!isEditMode && !isJobOwner && (
                 <View className="p-4 pt-0 mb-10 mt-2">
                     <TouchableOpacity
                         onPress={handleApply}
-                        disabled={isApplied && !resumeData} // Eğer başvurulduysa ama CV yoksa disabled olmasın
+                        disabled={isApplied && !resumeData}
                         className={`${isApplied && resumeData ? 'bg-green-600' : (isApplied ? 'bg-gray-400' : 'bg-blue-600')} p-4 rounded-lg items-center justify-center`}
                     >
                         <Text className="text-white font-bold text-lg">
@@ -352,6 +392,20 @@ export default function DetailsJob() {
                     </TouchableOpacity>
                 </View>
             )}
+
+
+            {isEditMode ? (
+                <View className="p-4 pt-0 mb-10 mt-2">
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate("JobApplicant", { job_id: job._id })}
+                        className={`bg-green-600 p-4 rounded-lg items-center justify-center`}
+                    >
+                        <Text className="text-white font-bold text-lg">
+                            Başvurular
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            ) : null}
 
             <Modal
                 animationType="fade"

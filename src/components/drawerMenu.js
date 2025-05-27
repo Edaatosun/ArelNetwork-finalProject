@@ -22,6 +22,8 @@ import { ScrollView } from 'react-native';
 import MyEvent from "../screens/other/myEvent";
 import MyIntern from "../screens/other/myIntern";
 import MyJob from "../screens/other/myJob";
+import ProfileOther from "../screens/other/myProfileOther";
+import SearchUserOther from "../screens/other/searchUserOther";
 
 const Drawer = createDrawerNavigator();
 
@@ -56,15 +58,41 @@ export default function DrawerMenu() {
         drawerIcon: ({ color, size }) => <FontAwesome name="home" size={size} color={color} />
       }} />
 
-      <Drawer.Screen name="Profile" component={Profile} options={{
-        title: "Profilim",
-        drawerIcon: ({ color, size }) => <MaterialIcons name="account-circle" size={size} color={color} />
-      }} />
+      {userType === 'student' ? (
+        <Drawer.Screen
+          name="Profile"
+          component={Profile}
+          options={{
+            title: "Profilim",
+            drawerIcon: ({ color, size }) => (
+              <MaterialIcons name="account-circle" size={size} color={color} />
+            ),
+          }}
+        />
+      ) : (
+        <Drawer.Screen
+          name="ProfileOther"
+          component={ProfileOther}
+          options={{
+            title: "Profilim",
+            drawerIcon: ({ color, size }) => (
+              <MaterialIcons name="account-circle" size={size} color={color} />
+            ),
+          }}
+        />
+      )}
 
-      <Drawer.Screen name="SearchUser" component={SearchUser} options={{
-        title: "Kişi Arama",
-        drawerIcon: ({ color, size }) => <FontAwesome name="search" size={size} color={color} />
-      }} />
+      {userType === 'student' ? (
+        <Drawer.Screen name="SearchUser" component={SearchUser} options={{
+          title: "Kişi Arama",
+          drawerIcon: ({ color, size }) => <FontAwesome name="search" size={size} color={color} />
+        }} />
+      ) : (
+        <Drawer.Screen name="SearchUserOther" component={SearchUserOther} options={{
+          title: "Kişi Arama",
+          drawerIcon: ({ color, size }) => <FontAwesome name="search" size={size} color={color} />
+        }} />
+      )}
 
       <Drawer.Screen name="Logout" component={LogoutScreen} options={{
         title: "Çıkış Yap",

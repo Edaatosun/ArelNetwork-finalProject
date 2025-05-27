@@ -196,11 +196,22 @@ export default function MyEvent() {
             <Text className="ml-2 text-gray-600 text-sm">{event.eventField}</Text>
           </View>
         </View>
-        <View className="justify-center px-4 pb-3">
+        <View className="flex-row justify-center px-4 pb-3">
+          {/* Başvurular Butonu */}
+          <Button
+            mode="contained"
+            onPress={() => navigation.navigate("EventApplicant", { event_id: event._id })}
+            className="bg-blue-600 rounded-md flex-1 mr-2"
+            labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
+          >
+            Katılımcılar
+          </Button>
+
+          {/* İlana Git Butonu */}
           <Button
             mode="contained"
             onPress={goToEventDetail}
-            className="bg-blue-600 rounded-md w-full"
+            className="bg-green-600 rounded-md flex-1 ml-2"
             labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
           >
             İlana Git

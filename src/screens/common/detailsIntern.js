@@ -20,9 +20,43 @@ export default function DetailsIntern() {
     const [isApplied, setIsApplied] = useState(false);
     const [resumeData, setResumeData] = useState(null);
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+    const [isInternOwner, setIsInternOwner] = useState(false);
+    const [userType, setUserType] = useState(null);
+
+
+    useEffect(() => {
+        const getUserType = async () => {
+            const type = await AsyncStorage.getItem('userType');
+            setUserType(type);
+        };
+        getUserType();
+    }, []);
+
 
     useFocusEffect(
         useCallback(() => {
+
+            const fetchData = async () => {
+                // Always fetch intern details
+                await fetchInternDetails();
+
+                // Get the token once
+                const localToken = await AsyncStorage.getItem("token");
+
+                // Conditionally run checkIsOwner based on 'type'
+                if (userType !== "student") {
+                    await checkIsOwner(localToken);
+                } else {
+                    console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaelse");
+                    setIsInternOwner(false);
+                }
+
+                console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+
+                await checkIfApplied(localToken);
+            };
+
             const fetchInternDetails = async () => {
                 try {
                     setLoading(true);
@@ -47,16 +81,44 @@ export default function DetailsIntern() {
                 }
             };
 
-            const checkIfApplied = async () => {
+            const checkIsOwner = async (localToken) => {
+                if (!localToken) {
+                    console.warn("Token bulunamadı, ilan sahibi kontrolü yapılamıyor.");
+                    setIsInternOwner(false);
+                    return;
+                }
+
                 try {
-                    const localToken = await AsyncStorage.getItem("token");
+                    const response = await graduateApi.get(`/interns/${item_id}/isOwner`, {
+                        headers: {
+                            'Authorization': `Bearer ${localToken}`,
+                            'Content-Type': 'application/json',
+                        },
+                    });
+                    if (response.status === 200) {
+                        const isOwner = response.data.isOwner;
+                        setIsInternOwner(isOwner);
+                        console.log("İlan sahibi:", isOwner);
+                    } else {
+                        setIsJobOwner(false);
+                        console.log("İlan sahibi değil: false");
+                    }
+                } catch (error) {
+                    console.error("İlan sahibi kontrolü sırasında hata:", error);
+                    setIsInternOwner(false);
+                    Alert.alert("Hata", "İlan sahibi kontrol edilirken bir sorun oluştu.");
+                }
+            };
+
+            const checkIfApplied = async (localToken) => {
+                try {
                     if (!localToken) {
                         console.warn("Token bulunamadı, başvuru durumu kontrol edilemiyor.");
                         setIsApplied(false);
                         setResumeData(null); // Token yoksa CV verisi de yoktur
                         return;
                     }
-
+                    console.log("hdagsfhjg");
                     const response = await commonApi.get(`/check/myIntern/${item_id}`, {
                         headers: {
                             'Authorization': `Bearer ${localToken}`,
@@ -67,6 +129,7 @@ export default function DetailsIntern() {
                     // Backend'den gelen yanıtın 200 ve message'ının "Başvuru yapılmış." olması durumunda
                     if (response.status === 200 && response.data.message === "Başvuru yapılmış.") {
                         setIsApplied(true);
+                        console.log("heyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy");
                         setResumeData(response.data.resume); // Backend'den gelen resume URL'sini kaydet
                         console.log("Başvuruldu: true, CV Yolu:", response.data.resume);
                     } else {
@@ -76,7 +139,7 @@ export default function DetailsIntern() {
                     }
                 } catch (error) {
                     console.error("Başvuru durumu kontrol edilirken hata:", error);
-                    // Backend 404 döndürdüğünde veya başka bir hata olduğunda başvurulmamış sayarız
+
                     if (error.response && error.response.status === 404) {
                         setIsApplied(false);
                         setResumeData(null);
@@ -89,17 +152,16 @@ export default function DetailsIntern() {
                 }
             };
 
-            fetchInternDetails();
-            checkIfApplied();
+            fetchData();
 
             return () => {
                 setIntern(null);
                 setIsApplied(false);
+                setIsInternOwner(false);
                 setResumeData(null);
             };
-        }, [item_id])
+        }, [item_id, userType])
     );
-
 
     useEffect(() => {
         Animated.timing(fadeAnim, {
@@ -340,11 +402,11 @@ export default function DetailsIntern() {
                 </ScrollView>
             </Animated.View>
 
-            {!isEditMode && (
+            {!isEditMode && !isInternOwner && (
                 <View className="p-4 pt-0 mb-10 mt-2">
                     <TouchableOpacity
                         onPress={handleApply}
-                        disabled={isApplied && !resumeData} // Eğer başvurulduysa ama CV yoksa disabled olmasın
+                        disabled={isApplied && !resumeData}
                         className={`${isApplied && resumeData ? 'bg-green-600' : (isApplied ? 'bg-gray-400' : 'bg-blue-600')} p-4 rounded-lg items-center justify-center`}
                     >
                         <Text className="text-white font-bold text-lg">
@@ -353,6 +415,20 @@ export default function DetailsIntern() {
                     </TouchableOpacity>
                 </View>
             )}
+
+            {isEditMode ? (
+                <View className="p-4 pt-0 mb-10 mt-2">
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate("InternApplicant", { intern_id: intern._id })}
+                        className={`bg-green-600 p-4 rounded-lg items-center justify-center`}
+                    >
+                        <Text className="text-white font-bold text-lg">
+                            Başvurular
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            ) : null}
+
 
             <Modal
                 animationType="fade"

@@ -112,7 +112,7 @@ export default function MyIntern() {
       } else {
         fetchMyInterns();
       }
-    }, 500); 
+    }, 500);
 
     return () => clearTimeout(delayDebounce);
   }, [searchQuery, searchMyInterns, fetchMyInterns]);
@@ -123,8 +123,8 @@ export default function MyIntern() {
 
     const goToInternDetail = () => {
       navigation.navigate('DetailsIntern',
-         { 
-          item_id: intern._id ,
+        {
+          item_id: intern._id,
           isEditMode: true
         });
     };
@@ -164,11 +164,22 @@ export default function MyIntern() {
             <Text className="ml-2 text-gray-600 text-sm">{intern.internField}</Text>
           </View>
         </View>
-        <View className="justify-center px-4 pb-3">
+        <View className="flex-row justify-center px-4 pb-3">
+          {/* Başvurular Butonu */}
+          <Button
+            mode="contained"
+            onPress={() => navigation.navigate("InternApplicant", { intern_id: intern._id })}
+            className="bg-blue-600 rounded-md flex-1 mr-2"
+            labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
+          >
+            Başvurular
+          </Button>
+
+          {/* İlana Git Butonu */}
           <Button
             mode="contained"
             onPress={goToInternDetail}
-            className="bg-blue-600 rounded-md w-full"
+            className="bg-green-600 rounded-md flex-1 ml-2"
             labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
           >
             İlana Git

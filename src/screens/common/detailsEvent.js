@@ -16,13 +16,43 @@ export default function DetailsEvent() {
     const isEditMode = route.params?.isEditMode || false;
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const [event, setEvent] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [isApplied, setIsApplied] = useState(false);
-    const [resumeData, setResumeData] = useState(null);
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+
+    const [isEventOwner, setIsEventOwner] = useState(false);
+    const [userType, setUserType] = useState(null);
+
+    useEffect(() => {
+        const getUserType = async () => {
+            const type = await AsyncStorage.getItem('userType');
+            setUserType(type);
+        };
+        getUserType();
+    }, []);
+
 
     useFocusEffect(
         useCallback(() => {
+
+            const fetchData = async () => {
+                await fetchEventDetails();
+
+                const localToken = await AsyncStorage.getItem("token");
+
+                if (userType !== "student") {
+                    await checkIsOwner(localToken);
+                } else {
+                    console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaelse");
+                    setIsEventOwner(false);
+                }
+
+                console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+
+                await checkIfApplied(localToken);
+            };
+
             const fetchEventDetails = async () => {
                 try {
                     setLoading(true);
@@ -47,16 +77,44 @@ export default function DetailsEvent() {
                 }
             };
 
-            const checkIfApplied = async () => {
+            const checkIsOwner = async (localToken) => {
+                if (!localToken) {
+                    console.warn("Token bulunamadı, ilan sahibi kontrolü yapılamıyor.");
+                    setIsEventOwner(false);
+                    return;
+                }
+
                 try {
-                    const localToken = await AsyncStorage.getItem("token");
+                    const response = await graduateApi.get(`/events/${item_id}/isOwner`, {
+                        headers: {
+                            'Authorization': `Bearer ${localToken}`,
+                            'Content-Type': 'application/json',
+                        },
+                    });
+                    if (response.status === 200) {
+                        const isOwner = response.data.isOwner;
+                        setIsEventOwner(isOwner);
+                        console.log("İlan sahibi:", isOwner);
+                    } else {
+                        setIsEventOwner(false);
+                        console.log("İlan sahibi değil: false");
+                    }
+                } catch (error) {
+                    console.error("İlan sahibi kontrolü sırasında hata:", error);
+                    setIsEventOwner(false);
+                    Alert.alert("Hata", "İlan sahibi kontrol edilirken bir sorun oluştu.");
+                }
+            };
+
+            const checkIfApplied = async (localToken) => {
+                try {
                     if (!localToken) {
                         console.warn("Token bulunamadı, başvuru durumu kontrol edilemiyor.");
                         setIsApplied(false);
-                        setResumeData(null);
+
                         return;
                     }
-
+                    console.log("hdagsfhjg");
                     const response = await commonApi.get(`/check/myEvent/${item_id}`, {
                         headers: {
                             'Authorization': `Bearer ${localToken}`,
@@ -64,39 +122,37 @@ export default function DetailsEvent() {
                         },
                     });
 
-                    if (response.status === 200 && response.data.message === "Başvuru yapılmış.") {
+                    if (response.status === 200) {
                         setIsApplied(true);
-                        setResumeData(response.data.resume);
-                        console.log("Başvuruldu: true, CV Yolu:", response.data.resume);
+                        console.log("heyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy");
                     } else {
                         setIsApplied(false);
-                        setResumeData(null);
                         console.log("Başvuruldu: false");
                     }
                 } catch (error) {
                     console.error("Başvuru durumu kontrol edilirken hata:", error);
+
                     if (error.response && error.response.status === 404) {
                         setIsApplied(false);
-                        setResumeData(null);
+
                         console.log("Başvuru bulunamadı (404).");
                     } else {
                         setIsApplied(false);
-                        setResumeData(null);
+
                         Alert.alert("Hata", "Başvuru durumu kontrol edilirken bir sorun oluştu.");
                     }
                 }
             };
 
-            fetchEventDetails();
-            checkIfApplied();
+            fetchData();
 
-            // cleanup function (isteğe bağlı, odaktan çıkıldığında çalışır)
             return () => {
                 setEvent(null);
                 setIsApplied(false);
-                setResumeData(null);
+                setIsEventOwner(false);
+
             };
-        }, [item_id])
+        }, [item_id, userType])
     );
 
     useEffect(() => {
@@ -108,81 +164,33 @@ export default function DetailsEvent() {
     }, [fadeAnim]);
 
     const handleApply = async () => {
-        if (isApplied) {
-            // Eğer isApplied true ise, CV'yi gösterme işlevini çalıştır
-            if (resumeData) {
-                try {
-                    const supported = await Linking.canOpenURL(resumeData);
-                    if (supported) {
-                        await Linking.openURL(resumeData);
-                    } else {
-                        Alert.alert("Hata", "CV dosyası açılamıyor veya geçersiz bir bağlantı.");
-                    }
-                } catch (error) {
-                    console.error("CV açılırken hata:", error);
-                    Alert.alert("Hata", "CV'yi açarken bir sorun oluştu.");
-                }
-            } else {
-                Alert.alert("Bilgi", "Başvurunuz onaylandı ancak CV dosyası bulunamadı.");
-            }
-            return;
-        }
-
-        // isApplied false ise, başvuru yapma işlevini çalıştır
         setLoading(true); // Yükleme durumunu başlat
 
         try {
+            // JSON formatında body oluştur
+            const body = {
+                _id: item_id
+            };
             const localToken = await AsyncStorage.getItem("token");
-            if (!localToken) {
-                Alert.alert("Hata", "Giriş yapmanız gerekiyor.");
-                return;
-            }
+            console.log("Gönderilen JSON:", body); // Debug için
 
-            // CV seçiciyi aç
-            const result = await DocumentPicker.getDocumentAsync({
-                type: 'application/pdf', // Sadece PDF dosyaları
-                copyToCacheDirectory: true, // Android'de dosya yolunu alabilmek için
-            });
-
-            if (result.canceled) {
-                Alert.alert("Bilgi", "CV seçimi iptal edildi.");
-                setLoading(false); // Yükleme durumunu kapat
-                return;
-            }
-
-            const { uri, name, mimeType, size } = result.assets[0];
-
-            // FormData oluştur
-            const formData = new FormData();
-            formData.append('_id', item_id);
-            formData.append('resume', {
-                uri: uri,
-                name: name,
-                type: mimeType || 'application/pdf', // mimeType bulunamazsa varsayılan
-            });
-
-            console.log("Gönderilen FormData:", formData); // Debug için
-
-            const response = await commonApi.post(`/apply/event`, formData, {
+            const response = await commonApi.post(`/apply/event`, body, {
                 headers: {
                     'Authorization': `Bearer ${localToken}`,
-                    'Content-Type': 'multipart/form-data',
+                    'Content-Type': 'application/json', // JSON gönderdiğimiz için gerekli
                 },
             });
 
             if (response.status === 200) {
                 setIsApplied(true);
-                setResumeData(response.data.resume); // Backend'den gelen CV URL'sini kaydet
                 Alert.alert("Başarılı", response.data.msg || 'Başvurunuz başarıyla alındı!');
             } else {
                 Alert.alert("Hata", response.data.msg || 'Başvuru sırasında bir hata oluştu.');
             }
         } catch (error) {
             console.error("Başvuru hatası:", error);
-            // Hata durumunda başvurulmamış kabul et
             setIsApplied(false);
-            setResumeData(null);
-            if (error.response && error.response.data && error.response.data.msg) {
+            if (error.response?.data?.msg) {
                 Alert.alert("Hata", error.response.data.msg);
             } else {
                 Alert.alert("Hata", 'Beklenmeyen bir hata oluştu.');
@@ -191,6 +199,7 @@ export default function DetailsEvent() {
             setLoading(false); // Yükleme durumunu kapat
         }
     };
+
 
     const renderRichText = (text, type = 'paragraph') => {
         if (!text) return null;
@@ -246,6 +255,43 @@ export default function DetailsEvent() {
             setLoading(false);
             Alert.alert("Hata", "yeniden deneyiniz!");
             console.error(err);
+        }
+    };
+
+    const handleCancelApplication = async () => {
+        setLoading(true); // Yükleme durumunu başlat
+
+        try {
+
+            const body = {
+                _id: item_id
+            };
+            const localToken = await AsyncStorage.getItem("token");
+            console.log("İptal Edilecek JSON:", body);
+
+            const response = await commonApi.post(`/cancel/event`, body, {
+                headers: {
+                    'Authorization': `Bearer ${localToken}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (response.status === 200) {
+                setIsApplied(false);
+                Alert.alert("Başarılı", response.data.msg || 'Başvurunuz başarıyla iptal edildi!');
+
+            } else {
+                Alert.alert("Hata", response.data.msg || 'Başvuru iptali sırasında bir hata oluştu.');
+            }
+        } catch (error) {
+            console.error("Başvuru iptal hatası:", error);
+            if (error.response?.data?.msg) {
+                Alert.alert("Hata", error.response.data.msg);
+            } else {
+                Alert.alert("Hata", 'Beklenmeyen bir hata oluştu.');
+            }
+        } finally {
+            setLoading(false); // Yükleme durumunu kapat
         }
     };
 
@@ -338,19 +384,42 @@ export default function DetailsEvent() {
             </Animated.View>
 
 
-            {!isEditMode && (
+            {!isEditMode && !isEventOwner && (
+                <View className="p-4 pt-0 mb-10 mt-2">
+                    {isApplied ? (
+                        <TouchableOpacity
+                            onPress={handleCancelApplication}
+                            className="bg-red-600 p-4 rounded-lg items-center justify-center"
+                        >
+                            <Text className="text-white font-bold text-lg">
+                                İptal Et
+                            </Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity
+                            onPress={handleApply}
+                            className="bg-blue-600 p-4 rounded-lg items-center justify-center"
+                        >
+                            <Text className="text-white font-bold text-lg">
+                                Katıl
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
+            )}
+
+            {isEditMode ? (
                 <View className="p-4 pt-0 mb-10 mt-2">
                     <TouchableOpacity
-                        onPress={handleApply}
-                        disabled={isApplied && !resumeData} // Eğer başvurulduysa ama CV yoksa disabled olmasın
-                        className={`${isApplied && resumeData ? 'bg-green-600' : (isApplied ? 'bg-gray-400' : 'bg-blue-600')} p-4 rounded-lg items-center justify-center`}
+                        onPress={() => navigation.navigate("EventApplicant", { event_id: event._id })}
+                        className={`bg-green-600 p-4 rounded-lg items-center justify-center`}
                     >
                         <Text className="text-white font-bold text-lg">
-                            {isApplied ? (resumeData ? 'CV\'yi GÖR' : 'Başvuruldu (CV Yok)') : 'CV Gönder'}
+                            Katılımcılar
                         </Text>
                     </TouchableOpacity>
                 </View>
-            )}
+            ) : null}
 
 
 

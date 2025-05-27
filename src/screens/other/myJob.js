@@ -112,7 +112,7 @@ export default function MyJob() {
       } else {
         fetchMyJobs();
       }
-    }, 500); 
+    }, 500);
 
     return () => clearTimeout(delayDebounce);
   }, [searchQuery, searchMyJobs, fetchMyJobs]);
@@ -122,9 +122,9 @@ export default function MyJob() {
     const jobEndDate = job.toDate ? new Date(job.toDate) : null;
 
     const goToJobDetail = () => {
-      navigation.navigate('DetailsJob', 
-        { 
-          item_id: job._id ,
+      navigation.navigate('DetailsJob',
+        {
+          item_id: job._id,
           isEditMode: true
         });
     };
@@ -164,11 +164,22 @@ export default function MyJob() {
             <Text className="ml-2 text-gray-600 text-sm">{job.jobField}</Text>
           </View>
         </View>
-        <View className="justify-center px-4 pb-3">
+        <View className="flex-row justify-center px-4 pb-3">
+          {/* Başvurular Butonu */}
+          <Button
+            mode="contained"
+            onPress={() => navigation.navigate("JobApplicant", { job_id: job._id })} 
+            className="bg-blue-600 rounded-md flex-1 mr-2" 
+            labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
+          >
+            Başvurular
+          </Button>
+
+          {/* İlana Git Butonu */}
           <Button
             mode="contained"
             onPress={goToJobDetail}
-            className="bg-blue-600 rounded-md w-full"
+            className="bg-green-600 rounded-md flex-1 ml-2" 
             labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
           >
             İlana Git

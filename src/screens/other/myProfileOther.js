@@ -5,7 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from "@react-navigation/native";
 import * as DocumentPicker from 'expo-document-picker';
-import { studentApi, uploadApi } from "../../connector/URL.js";
+import { graduateApi, uploadApi } from "../../connector/URL.js";
 import default_image_background from "../../../assets/images/profile_background.jpg"
 
 export default function ProfileOther() {
@@ -17,7 +17,7 @@ export default function ProfileOther() {
     const fetchUserInfo = async () => {
         try {
             const token = await AsyncStorage.getItem("token");
-            const response = await studentApi.get("/me", {
+            const response = await graduateApi.get("/me", {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
@@ -178,7 +178,7 @@ export default function ProfileOther() {
                     onPress: async () => {
                         try {
                             const token = await AsyncStorage.getItem("token");
-                            const response = await studentApi.get("/remove/resume", {
+                            const response = await graduateApi.get("/remove/resume", {
                                 headers: {
                                     'Authorization': `Bearer ${token}`,
                                     'Content-Type': 'application/json',
@@ -218,7 +218,7 @@ export default function ProfileOther() {
                     onPress: async () => {
                         try {
                             const token = await AsyncStorage.getItem("token");
-                            const response = await studentApi.get("/remove/photo", {
+                            const response = await graduateApi.get("/remove/photo", {
                                 headers: {
                                     'Authorization': `Bearer ${token}`,
                                     'Content-Type': 'application/json',
@@ -255,7 +255,6 @@ export default function ProfileOther() {
 
     const InfoItem = ({ label, value }) => (
         <View className="flex-row justify-between items-center bg-[#b6dcfa] p-3 rounded-xl mb-2">
-            
             <Text
                 className="text-[#0f172a] mr-2"
                 numberOfLines={1}
@@ -264,7 +263,6 @@ export default function ProfileOther() {
             </Text>
         </View>
     );
-    const classInfo = userInfo.classNo ? `${userInfo.classNo}. Sınıf` : null;
 
     return (
         <ScrollView className="flex-1 bg-gray-100">
@@ -316,11 +314,6 @@ export default function ProfileOther() {
                                 label="Durum"
                                 value={userInfo.status === "aktif" ? "Öğrenci" : "Mezun"}
                             />
-                            {classInfo && (
-                                <InfoItem label="sınıf"
-                                    value={classInfo} />
-
-                            )}
                         </View>
 
                         <View className="mt-5 space-y-4 mb-10">

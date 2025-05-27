@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, FlatList, Alert, Image, TouchableOpacity } from 'react-native';
 import { Searchbar, Card, Text, Avatar, Appbar, TouchableRipple } from 'react-native-paper';
-import api, { studentApi } from '../../connector/URL';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import { graduateApi } from '../../connector/URL';
 
-export default function SearchUser() {
+export default function SearchUserOther() {
     const [students, setStudents] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const navigation = useNavigation();
@@ -22,7 +22,7 @@ export default function SearchUser() {
         try {
             const localToken = await AsyncStorage.getItem('token');
 
-            const response = await studentApi.get('/search', {
+            const response = await graduateApi.get('/search', {
                 headers: {
                     Authorization: `Bearer ${localToken}`,
                     'Content-Type': 'application/json',
