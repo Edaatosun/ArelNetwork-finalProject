@@ -1,23 +1,8 @@
 // 🔧 Optimize edilmiş DetailsJob bileşeni: Çökme sorunlarına karşı güncellenmiş sürüm
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    ScrollView,
-    ActivityIndicator,
-    Alert,
-    Image,
-    Dimensions,
-    Linking,
-    Modal,
-} from "react-native";
-import {
-    useFocusEffect,
-    useNavigation,
-    useRoute,
-} from "@react-navigation/native";
+import {View,Text,TouchableOpacity,ScrollView,ActivityIndicator,Alert,Image,Dimensions,Linking,Modal,} from "react-native";
+import {useFocusEffect,useNavigation,useRoute} from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
 import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -46,93 +31,88 @@ export default function DetailsJob() {
         getUserType();
     }, []);
 
-    useEffect(() => {
-        if (!userType) return;
-        console.log("userType", userType);
+   useFocusEffect(
+  useCallback(() => {
+    if (!userType) return;
 
-        const fetchData = async () => {
-            const localToken = await AsyncStorage.getItem("token");
-            if (!localToken) return;
+    console.log("userType", userType);
 
-            await fetchJobDetails(localToken);
+    const fetchData = async () => {
+      const localToken = await AsyncStorage.getItem("token");
+      if (!localToken) return;
 
-            if (userType !== "student") {
-                await checkIsOwner(localToken);
-            } else {
-                setIsJobOwner(false);
-            }
+      await fetchJobDetails(localToken);
 
-            await checkIfApplied(localToken);
-        };
+      if (userType !== "student") {
+        await checkIsOwner(localToken);
+      } else {
+        setIsJobOwner(false);
+      }
 
-        const fetchJobDetails = async (token) => {
-            try {
-                setLoading(true);
-                const response = await commonApi.get(`/get/job/${item_id}`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                });
-                setJob(response.data.job);
-            } catch (error) {
-                Alert.alert("Hata", "İlan detayları yüklenirken bir sorun oluştu.");
-                setJob(null);
-            } finally {
-                setLoading(false);
-            }
-        };
+      await checkIfApplied(localToken);
+    };
 
-        const checkIsOwner = async (token) => {
-            try {
-                const response = await graduateApi.get(`/jobs/${item_id}/isOwner`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                });
-                setIsJobOwner(response.data.isOwner);
-            } catch (error) {
-                setIsJobOwner(false);
-                Alert.alert("Hata", "İlan sahibi kontrol edilirken bir sorun oluştu.");
-            }
-        };
+    const fetchJobDetails = async (token) => {
+      try {
+        setLoading(true);
+        const response = await commonApi.get(`/get/job/${item_id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+        setJob(response.data.job);
+      } catch (error) {
+        Alert.alert("Hata", "İlan detayları yüklenirken bir sorun oluştu.");
+        setJob(null);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-        const checkIfApplied = async (token) => {
-            try {
-                const response = await commonApi.get(`/check/myJob/${item_id}`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                });
-                console.log(response);
-                if (response.status === 200 && response.data.message === "Başvuru yapılmış.") {
-                    setIsApplied(true);
-                    setResumeData(response.data.resume);
-                } else if (response.status === 200 && response.data.message === "Başvuru yapılmamış.") {
-                    setIsApplied(false);
-                    setResumeData(null);
-                }
-                else {
-                    setIsApplied(false);
-                    setResumeData(null);
-                }
-            } catch (error) {
-                setIsApplied(false);
-                setResumeData(null);
-                if (!(error.response && error.response.status === 404)) {
-                    Alert.alert(
-                        "Hata",
-                        "Başvuru durumu kontrol edilirken bir sorun oluştu."
-                    );
-                }
-            }
-        };
+    const checkIsOwner = async (token) => {
+      try {
+        const response = await graduateApi.get(`/jobs/${item_id}/isOwner`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+        setIsJobOwner(response.data.isOwner);
+      } catch (error) {
+        setIsJobOwner(false);
+        Alert.alert("Hata", "İlan sahibi kontrol edilirken bir sorun oluştu.");
+      }
+    };
 
-        fetchData();
-    }, [userType]);
+    const checkIfApplied = async (token) => {
+      try {
+        const response = await commonApi.get(`/check/myJob/${item_id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
 
+        if (response.status === 200 && response.data.message === "Başvuru yapılmış.") {
+          setIsApplied(true);
+          setResumeData(response.data.resume);
+        } else {
+          setIsApplied(false);
+          setResumeData(null);
+        }
+      } catch (error) {
+        setIsApplied(false);
+        setResumeData(null);
+        if (!(error.response && error.response.status === 404)) {
+          Alert.alert("Hata", "Başvuru durumu kontrol edilirken bir sorun oluştu.");
+        }
+      }
+    };
+
+    fetchData();
+  }, [userType])
+);
     /*  useFocusEffect(
       useCallback(() => {
         if (!userType) return; // userType yüklenmeden fetchData çağrılmasın

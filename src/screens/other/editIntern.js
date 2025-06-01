@@ -9,7 +9,7 @@ import {
     Keyboard,
     Platform,
     KeyboardAvoidingView,
-    ActivityIndicator 
+    ActivityIndicator
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -36,7 +36,7 @@ export default function EditIntern() {
     const [selectedFields, setSelectedFields] = useState([]);
     const [showFieldDialog, setShowFieldDialog] = useState(false);
     const [keyboardHeight, setKeyboardHeight] = useState(0);
-    const [loading, setLoading] = useState(false); // Yüklenme durumu için state
+    const [loading, setLoading] = useState(false);
 
     const availableFields = [
         "Mühendislik", "Yazılım Geliştirme", "Tasarım", "Pazarlama",
@@ -52,33 +52,56 @@ export default function EditIntern() {
         }
     };
 
-    const onFromDateChange = (intern, selectedDate) => {
+    const onFromDateChange = (event, selectedDate) => {
+        if (event.type === 'dismissed') {
+            setShowFromDatePicker(false);
+            return;
+        }
+
         const currentDate = selectedDate || selectedFromDateObj;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (currentDate < today) {
+            Alert.alert("Hata", "Bugün veya daha sonraki bir tarih seçin.");
+            return;
+        }
+
         setShowFromDatePicker(false);
-        if (currentDate) {
-            setSelectedFromDateObj(currentDate);
-            setFromDate(currentDate.toISOString().split('T')[0]); // YYYY-MM-DD formatında sakla
+        setSelectedFromDateObj(currentDate);
+        setFromDate(currentDate.toISOString().split('T')[0]);
+
+        if (selectedToDateObj && currentDate > selectedToDateObj) {
+            setSelectedToDateObj(null);
+            setToDate('');
         }
     };
 
-    const onToDateChange = (intern, selectedDate) => {
+    const onToDateChange = (event, selectedDate) => {
+        if (event.type === 'dismissed') {
+            setShowToDatePicker(false);
+            return;
+        }
+
         const currentDate = selectedDate || selectedToDateObj;
-        setShowToDatePicker(false);
-        if (currentDate) {
-            setSelectedToDateObj(currentDate);
-            setToDate(currentDate.toISOString().split('T')[0]); // YYYY-MM-DD formatında sakla
-        }
-    };
 
+        if (selectedFromDateObj && currentDate < selectedFromDateObj) {
+            Alert.alert("Hata", "Bitiş tarihi, başlangıç tarihinden önce olamaz.");
+            return;
+        }
+
+        setShowToDatePicker(false);
+        setSelectedToDateObj(currentDate);
+        setToDate(currentDate.toISOString().split('T')[0]);
+    };
 
     const fetchInternDetails = async () => {
         try {
-            console.log("Staj ilanı detayları çekiliyor...");
-            setLoading(true); // Yükleme başlıyor
+            setLoading(true);
             const localToken = await AsyncStorage.getItem("token");
             if (!localToken) {
                 Alert.alert("Hata", "Kimlik doğrulama token'ı bulunamadı. Lütfen tekrar giriş yapın.");
-                navigation.navigate('Login'); // Örnek olarak giriş sayfasına yönlendirme
+                navigation.navigate('Login');
                 return;
             }
 
@@ -89,28 +112,23 @@ export default function EditIntern() {
                 },
             });
 
-            
             const internDataArray = response.data.intern;
 
             if (!internDataArray || internDataArray.length === 0) {
                 Alert.alert("Hata", "Staj ilanı verisi bulunamadı veya boş döndü.");
-                navigation.goBack(); // Bir önceki sayfaya dönebiliriz
+                navigation.goBack();
                 return;
             }
-            const internData = internDataArray[0]; // **Buradaki değişiklik**
-
-            console.log("API'den Gelen Ham Veri:", response.data);
-            console.log("İşlenen intern Data:", internData); // Kontrol için
+            const internData = internDataArray[0];
 
             setInternTitle(internData.internTitle);
             setCompanyName(internData.company);
             setLocation(internData.location);
-            setFromDate(internData.fromDate); // API'den gelen formatı doğrudan set et
-            setToDate(internData.toDate);     // API'den gelen formatı doğrudan set et
+            setFromDate(internData.fromDate);
+            setToDate(internData.toDate);
             setDescription(internData.description);
             setSelectedFields(internData.internField ? internData.internField.split(',').map(f => f.trim()) : []);
 
-            // Eğer tarih objelerini de başlangıçta set etmek isterseniz (opsiyonel)
             if (internData.fromDate) {
                 setSelectedFromDateObj(new Date(internData.fromDate));
             }
@@ -119,32 +137,23 @@ export default function EditIntern() {
             }
 
         } catch (error) {
-            console.error("İlan verisi alınamadı:", error.response?.data?.message || error.message);
             Alert.alert("Hata", "Staj ilanı detayları yüklenirken bir sorun oluştu.");
         } finally {
-            setLoading(false); // Yükleme bitiyor
+            setLoading(false);
         }
     };
 
     useEffect(() => {
         fetchInternDetails();
 
-        const keyboardDidShowListener = Keyboard.addListener(
-            'keyboardDidShow',
-            (e) => setKeyboardHeight(e.endCoordinates.height)
-        );
-        const keyboardDidHideListener = Keyboard.addListener(
-            'keyboardDidHide',
-            () => setKeyboardHeight(0)
-        );
+        const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => setKeyboardHeight(e.endCoordinates.height));
+        const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
 
         return () => {
             keyboardDidHideListener.remove();
             keyboardDidShowListener.remove();
         };
-    }, [item_id]); // item_id değiştiğinde useEffect'in tekrar çalışması için ekledik
-
-
+    }, [item_id]);
 
     const handleEditIntern = async () => {
         if (!internTitle || !companyName || !location || !fromDate || !toDate || !description || selectedFields.length === 0) {
@@ -157,7 +166,7 @@ export default function EditIntern() {
             return;
         }
 
-        const updatedIntern = { 
+        const updatedIntern = {
             internTitle,
             description,
             company: companyName,
@@ -168,7 +177,7 @@ export default function EditIntern() {
         };
 
         try {
-            setLoading(true); // Güncelleme işlemi başlıyor
+            setLoading(true);
             const localToken = await AsyncStorage.getItem("token");
             if (!localToken) {
                 Alert.alert("Hata", "Giriş yapmanız gerekiyor.");
@@ -189,24 +198,22 @@ export default function EditIntern() {
                 Alert.alert('Hata', response.data?.message || 'Staj ilanı güncellenirken bir hata oluştu.');
             }
         } catch (error) {
-            console.error('Staj ilanı güncellenirken bir hata oluştu:', error.response?.data?.message || error.message);
             Alert.alert('Hata', error.response?.data?.message || 'Beklenmeyen bir hata oluştu.');
         } finally {
-            setLoading(false); // Güncelleme işlemi bitiyor
+            setLoading(false);
         }
     };
 
-    // Tarihlerin kullanıcıya gösterilecek formatı
     const displayFromDate = fromDate ? new Date(fromDate).toLocaleDateString('tr-TR') : '';
     const displayToDate = toDate ? new Date(toDate).toLocaleDateString('tr-TR') : '';
+
     return (
         <KeyboardAvoidingView
             className="flex-1"
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
-            <View className="flex-1  bg-gray-100">
-                {/* Yükleniyor Göstergesi */}
+            <View className="flex-1 bg-gray-100">
                 {loading && (
                     <View className="absolute inset-0 z-10 justify-center items-center bg-black bg-opacity-30">
                         <ActivityIndicator size="large" color="#0000ff" />
@@ -216,7 +223,7 @@ export default function EditIntern() {
                     <TouchableOpacity onPress={() => navigation.goBack()}>
                         <Icon name="arrow-back" size={30} color="black" />
                     </TouchableOpacity>
-                    <Text className="text-xl font-bold ml-4">Güncelle</Text>
+                    <Text className="text-xl font-bold ml-4">Staj İlanı Güncelle</Text>
 
                 </View>
                 <ScrollView
@@ -226,21 +233,20 @@ export default function EditIntern() {
                         paddingHorizontal: 20
                     }}
                     keyboardShouldPersistTaps="handled"
+
                 >
-                    {/* Staj ilanı Başlığı */}
                     <Text className="text-gray-800 font-semibold mb-2 mt-4">Staj İlanı Başlığı</Text>
                     <TextInput
-                        className="bg-white p-4 rounded-lg text-gray-800 shadow-sm border border-gray-300 w-full"
+                        className="bg-white p-4 rounded-lg text-gray-800 shadow-sm border border-gray-300"
                         placeholder="Staj İlanı Başlığı"
                         value={internTitle}
                         onChangeText={setInternTitle}
                         placeholderTextColor="#A9A9A9"
                     />
 
-                    {/* Bölüm Seçimi */}
                     <Text className="text-gray-800 font-semibold mt-4 mb-2">Bölümler</Text>
                     <TouchableOpacity
-                        className="bg-white p-4 rounded-lg shadow-sm border border-gray-300 flex-row justify-between items-center w-full"
+                        className="bg-white p-4 rounded-lg shadow-sm border border-gray-300 flex-row justify-between items-center"
                         onPress={() => setShowFieldDialog(true)}
                     >
                         <Text className={`flex-1 ${selectedFields.length > 0 ? 'text-gray-800' : 'text-gray-400'}`}>
@@ -249,19 +255,17 @@ export default function EditIntern() {
                         <Icon name="chevron-down-outline" size={20} color="#A9A9A9" />
                     </TouchableOpacity>
 
-                    {/* Firma Adı */}
                     <Text className="text-gray-800 font-semibold mb-2 mt-4">Firma Adı</Text>
                     <TextInput
-                        className="bg-white p-4 rounded-lg text-gray-800 shadow-sm border border-gray-300 w-full"
+                        className="bg-white p-4 rounded-lg text-gray-800 shadow-sm border border-gray-300"
                         placeholder="Şirket Adı"
                         value={companyName}
                         onChangeText={setCompanyName}
                         placeholderTextColor="#A9A9A9"
                     />
 
-                    {/* Yer (Konum) */}
                     <Text className="text-gray-800 font-semibold mb-2 mt-4">Yer</Text>
-                    <View className="bg-white p-2 rounded-lg shadow-sm flex-row items-center justify-between border border-gray-300 w-full">
+                    <View className="bg-white p-2 rounded-lg shadow-sm flex-row items-center justify-between border border-gray-300">
                         <TextInput
                             className="flex-1 text-gray-800"
                             placeholder="Konum"
@@ -272,23 +276,21 @@ export default function EditIntern() {
                         <Icon name="location-sharp" size={18} color="#6B7280" />
                     </View>
 
-                    {/* Tarih Seçiciler */}
                     <View className="flex-row justify-between items-center mt-4">
                         <View className="flex-1 mr-2">
                             <Text className="text-gray-800 font-semibold mb-2">Başlangıç Tarihi</Text>
                             <TextInput
-                                className="bg-white p-4 rounded-lg text-gray-800 shadow-sm border border-gray-300 w-full"
+                                className="bg-white p-4 rounded-lg text-gray-800 shadow-sm border border-gray-300"
                                 placeholder="gg.aa.yyyy"
                                 value={displayFromDate}
                                 onTouchStart={() => setShowFromDatePicker(true)}
                                 placeholderTextColor="#A9A9A9"
                             />
                         </View>
-
                         <View className="flex-1 ml-2">
                             <Text className="text-gray-800 font-semibold mb-2">Bitiş Tarihi</Text>
                             <TextInput
-                                className="bg-white p-4 rounded-lg text-gray-800 shadow-sm border border-gray-300 w-full"
+                                className="bg-white p-4 rounded-lg text-gray-800 shadow-sm border border-gray-300"
                                 placeholder="gg.aa.yyyy"
                                 value={displayToDate}
                                 onTouchStart={() => setShowToDatePicker(true)}
@@ -297,31 +299,31 @@ export default function EditIntern() {
                         </View>
                     </View>
 
-                    {/* Tarih Seçici Modals */}
                     {showFromDatePicker && (
                         <DateTimePicker
-                            value={selectedFromDateObj || (fromDate ? new Date(fromDate) : new Date())}
+                            value={selectedFromDateObj || new Date()}
                             mode="date"
                             is24Hour={true}
                             onChange={onFromDateChange}
                             display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                            minimumDate={new Date()}
                         />
                     )}
                     {showToDatePicker && (
                         <DateTimePicker
-                            value={selectedToDateObj || (toDate ? new Date(toDate) : new Date())}
+                            value={selectedToDateObj || new Date()}
                             mode="date"
                             is24Hour={true}
                             onChange={onToDateChange}
                             display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                            minimumDate={selectedFromDateObj || new Date()}
                         />
                     )}
 
-                    {/* Açıklama */}
                     <Text className="text-gray-800 font-semibold mb-2 mt-4">Açıklama</Text>
                     <TextInput
-                        className="bg-white p-4 rounded-lg text-gray-800 h-32 shadow-sm border border-gray-300 w-full"
-                        placeholder="Staj İlanı hakkında detaylı bilgi..."
+                        className="bg-white p-4 rounded-lg text-gray-800 h-32 shadow-sm border border-gray-300"
+                        placeholder="Staj ilanı hakkında detaylı bilgi..."
                         value={description}
                         onChangeText={setDescription}
                         placeholderTextColor="#A9A9A9"
@@ -329,42 +331,37 @@ export default function EditIntern() {
                         textAlignVertical="top"
                     />
 
-                    {/* Staj İlanı Güncelle Butonu */}
                     <TouchableOpacity
                         onPress={handleEditIntern}
-                        className="bg-green-600 p-4 rounded-lg mt-4 mb-10 items-center shadow-md active:bg-green-700 w-full"
-                        disabled={loading}
+                        className="bg-green-600 p-4 rounded-lg mt-4 mb-10 items-center shadow-md active:bg-green-700"
                     >
                         <Text className="text-white text-lg font-bold">Güncelle</Text>
                     </TouchableOpacity>
                 </ScrollView>
-            </View>
 
-            {/* Bölüm Seçim Diyaloğu */}
-            <Portal>
-                <Dialog visible={showFieldDialog} onDismiss={() => setShowFieldDialog(false)} className="rounded-lg">
-                    <Dialog.Title className="text-lg font-bold text-gray-800">Bölüm Seçin</Dialog.Title>
-                    <Dialog.Content>
-                        <ScrollView className="max-h-[300px]">
-                            {availableFields.map((field) => (
-                                <Checkbox.Item
-                                    key={field}
-                                    label={field}
-                                    status={selectedFields.includes(field) ? 'checked' : 'unchecked'}
-                                    onPress={() => handleFieldSelection(field)}
-                                    color="#10B981"
-                                    labelStyle={{ color: '#374151' }}
-                                />
-                            ))}
-                        </ScrollView>
-                    </Dialog.Content>
-                    <Dialog.Actions className="justify-end">
-                        <PaperButton onPress={() => setShowFieldDialog(false)} className="text-blue-600">
-                            Tamam
-                        </PaperButton>
-                    </Dialog.Actions>
-                </Dialog>
-            </Portal>
+                <Portal>
+                    <Dialog visible={showFieldDialog} onDismiss={() => setShowFieldDialog(false)}>
+                        <Dialog.Title className="text-lg font-bold text-gray-800">Bölüm Seçin</Dialog.Title>
+                        <Dialog.Content>
+                            <ScrollView className="max-h-[300px]">
+                                {availableFields.map((field) => (
+                                    <Checkbox.Item
+                                        key={field}
+                                        label={field}
+                                        status={selectedFields.includes(field) ? 'checked' : 'unchecked'}
+                                        onPress={() => handleFieldSelection(field)}
+                                        color="#10B981"
+                                        labelStyle={{ color: '#374151' }}
+                                    />
+                                ))}
+                            </ScrollView>
+                        </Dialog.Content>
+                        <Dialog.Actions>
+                            <PaperButton onPress={() => setShowFieldDialog(false)}>Tamam</PaperButton>
+                        </Dialog.Actions>
+                    </Dialog>
+                </Portal>
+            </View>
         </KeyboardAvoidingView>
     );
 }

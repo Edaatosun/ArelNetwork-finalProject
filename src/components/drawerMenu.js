@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { createDrawerNavigator, DrawerItemList } from "@react-navigation/drawer";
 import { Image, Text, View, TouchableOpacity, UIManager, LayoutAnimation, Platform, TouchableNativeFeedback } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-// Sayfalarınızı import edin
 
 import Profile from "../screens/student/myProfile";
 import SearchUser from "../screens/student/searchUser";
