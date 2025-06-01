@@ -7,13 +7,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from '@react-navigation/native';
 import { commonApi } from '../../connector/URL';
 import DropDownPicker from 'react-native-dropdown-picker';
+import { ActivityIndicator } from 'react-native-paper';
 
 export default function Home() {
     const navigation = useNavigation();
     const [searchQuery, setSearchQuery] = useState('');
 
     const [selectedTab, setSelectedTab] = useState('İş İlanları');
-    const [showFilterModal, setShowFilterModal] = useState(false); // Renamed for clarity
+    const [showFilterModal, setShowFilterModal] = useState(false);
 
     const [activities, setActivities] = useState([]);
     const [jobData, setJobData] = useState([]);
@@ -21,16 +22,18 @@ export default function Home() {
 
     const [selectedLocation, setSelectedLocation] = useState(null);
     const [selectedCompany, setSelectedCompany] = useState(null);
-    const [selectedDepartment, setSelectedDepartment] = useState(null); // Changed initial state to null
+    const [selectedDepartment, setSelectedDepartment] = useState(null);
 
     const [locationOpen, setLocationOpen] = useState(false);
     const [companyOpen, setCompanyOpen] = useState(false);
     const [departmentOpen, setDepartmentOpen] = useState(false);
 
+    const [loading, setLoading] = useState(false);
+
     // Filter data for DropDownPickers
     const uniqueDepartments = useMemo(() => {
         const departments = [
-            "Tümü", // Add "Tümü" option for departments
+            "Tümü",
             "Bilgisayar Mühendisliği",
             "Elektrik-Elektronik Mühendisliği",
             "Makine Mühendisliği",
@@ -77,13 +80,16 @@ export default function Home() {
 
             if (response.status === 400 || !response.data.events || response.data.msg) {
                 setActivities([]);
+                setLoading(false);
             } else {
                 setActivities(response.data.events);
+                setLoading(false);
             }
 
         } catch (error) {
             console.log("Etkinlikler alınırken hata oluştu:", error.response || error);
             setActivities([]);
+            setLoading(false);
         }
     };
 
@@ -98,14 +104,17 @@ export default function Home() {
             });
             setJobData(response.data.jobs);
             console.log(response.data.jobs);
+            setLoading(false);
         } catch (error) {
             console.error("İş ilanları alınırken hata oluştu");
             console.log(error);
+            setLoading(false);
 
             if (error.response?.status === 400) {
                 await AsyncStorage.removeItem("token");
                 await AsyncStorage.removeItem("userType");
                 navigation.navigate("MainScreen");
+                setLoading(false);
             }
         }
     };
@@ -120,8 +129,10 @@ export default function Home() {
                 },
             });
             setInternshipData(response.data.interns);
+            setLoading(false);
         } catch (error) {
             console.error("Staj ilanları alınırken hata oluştu:", error.response || error);
+            setLoading(false);
         }
     };
 
@@ -256,6 +267,8 @@ export default function Home() {
 
     // Function to fetch all data based on the current tab (for "İptal" button)
     const fetchAllDataBasedOnTab = useCallback(() => {
+        setLoading(true);
+
         if (selectedTab === 'İş İlanları') {
             fetchJobData();
         } else if (selectedTab === 'Staj İlanları') {
@@ -333,7 +346,7 @@ export default function Home() {
             title = item.internTitle;
             company = item.company;
             location = item.location;
-           startDate = item.fromDate
+            startDate = item.fromDate
                 ? `${new Date(item.fromDate).toLocaleDateString('tr-TR')}`
                 : 'Tarih Yok';
             endDate = item.toDate
@@ -381,7 +394,7 @@ export default function Home() {
                         <Icon name="calendar" size={16} color="black" />
                         <Text className="ml-2 text-black">
                             {startDate}
-                            { ` - ${endDate}`}
+                            {` - ${endDate}`}
                         </Text>
                     </View>
 
@@ -405,6 +418,17 @@ export default function Home() {
         );
 
     };
+
+
+
+    if (loading) {
+            return (
+                <View className="flex-1 justify-center items-center bg-white">
+                    <ActivityIndicator size="large" color="#0000ff" />
+                    <Text className="mt-2 text-gray-600">İlanlar yükleniyor...</Text>
+                </View>
+            );
+        }
 
 
     return (
