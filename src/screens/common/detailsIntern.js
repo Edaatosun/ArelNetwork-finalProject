@@ -129,13 +129,14 @@ export default function DetailsIntern() {
                     // Backend'den gelen yanıtın 200 ve message'ının "Başvuru yapılmış." olması durumunda
                     if (response.status === 200 && response.data.message === "Başvuru yapılmış.") {
                         setIsApplied(true);
-                        console.log("heyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy");
-                        setResumeData(response.data.resume); // Backend'den gelen resume URL'sini kaydet
-                        console.log("Başvuruldu: true, CV Yolu:", response.data.resume);
-                    } else {
+                        setResumeData(response.data.resume);
+                    } else if (response.status === 200 && response.data.message === "Başvuru yapılmamış.") {
                         setIsApplied(false);
                         setResumeData(null);
-                        console.log("Başvuruldu: false");
+                    }
+                    else {
+                        setIsApplied(false);
+                        setResumeData(null);
                     }
                 } catch (error) {
                     console.error("Başvuru durumu kontrol edilirken hata:", error);

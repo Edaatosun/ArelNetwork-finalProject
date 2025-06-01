@@ -122,12 +122,13 @@ export default function DetailsEvent() {
                         },
                     });
 
-                    if (response.status === 200) {
+                    if (response.status === 200 && response.data.message === "Başvuru yapılmış.") {
                         setIsApplied(true);
-                        console.log("heyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy");
-                    } else {
+                    } else if (response.status === 200 && response.data.message === "Başvuru yapılmamış.") {
                         setIsApplied(false);
-                        console.log("Başvuruldu: false");
+                    }
+                    else {
+                        setIsApplied(false);
                     }
                 } catch (error) {
                     console.error("Başvuru durumu kontrol edilirken hata:", error);

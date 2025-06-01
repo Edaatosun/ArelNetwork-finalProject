@@ -33,6 +33,7 @@ export default function DrawerMenu() {
   useEffect(() => {
     const getUserType = async () => {
       const type = await AsyncStorage.getItem('userType');
+      console.log("DrawerMenu - Gelen userType:", type);
       setUserType(type);
     };
     getUserType();

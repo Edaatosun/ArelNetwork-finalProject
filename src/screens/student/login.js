@@ -1,89 +1,96 @@
-import { View, Text, TouchableOpacity, Image, Alert, Modal, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, Image, Alert, Modal, ActivityIndicator } from 'react-native';
 import { TextInput } from 'react-native-paper';
 import { useFonts } from 'expo-font';
-import { useEffect, useState } from "react";
-import { useNavigation } from "@react-navigation/native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import IconRight from "react-native-vector-icons/Entypo"
-import { studentApi } from "../../connector/URL";
+import { useEffect, useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import IconRight from 'react-native-vector-icons/Entypo';
+import { studentApi } from '../../connector/URL';
 
 export default function Login() {
-  const [schoolNo, setSchoolNo] = useState();
-  const [password, setPassword] = useState("");
+  const [schoolNo, setSchoolNo] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
-  const [tcNo, setTcNo] = useState("");
+  const [tcNo, setTcNo] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   let [fontsLoaded] = useFonts({
     'myFont': require('../../../assets/fonts/BebasNeue-Regular.ttf'),
   });
 
-
   const handleForgotSubmit = async () => {
-
-    setModalVisible(true);
     if (!tcNo) {
-      Alert.alert("Uyarı", "Lütfen TC Kimlik Numaranızı giriniz.");
+      Alert.alert('Uyarı', 'Lütfen TC Kimlik Numaranızı giriniz.');
       return;
     }
 
+    setModalVisible(true);
     try {
-      const response = await api.post("/forgotPassword", {
+      console.log('Forgot password request for TC:', tcNo);
+      const response = await studentApi.post('/forgotPassword', {
         tc: tcNo,
       });
+      console.log('Forgot password response:', response.data);
 
       if (response.status === 200) {
         setModalVisible(false);
-        Alert.alert("Başarılı", `Merhaba ${response.data.user.firstName}\nŞifren: ${response.data.user.password}`);
+        Alert.alert('Başarılı', `Merhaba ${response.data.user.firstName}\nŞifren: ${response.data.user.password}`);
       } else {
-        Alert.alert("Hata", response.data.msg || "Bilgi getirilemedi.");
+        Alert.alert('Hata', response.data.msg || 'Bilgi getirilemedi.');
       }
     } catch (error) {
-      console.log(error.message);
-      Alert.alert("Hata", "Bir hata oluştu.");
-    }
-  };
-
-
-  const handleLogin = async () => {
-    if (!schoolNo || !password) {
-      Alert.alert("Uyarı", "Lütfen okul numarası ve şifrenizi giriniz.");
-      return;
-    }
-
-    setLoading(true);
-    setModalVisible(true);
-
-    try {
-      console.log(studentApi);
-      const response = await studentApi.post("/login", {
-        schoolNumber: parseInt(schoolNo),
-        password: password,
-      });
-      const data = response.data;
-
-      if (response.status === 200 && data.token) {
-        Alert.alert("Başarılı", "Giriş başarılı!");
-        
-        await AsyncStorage.setItem("token", data.token);
-        await AsyncStorage.setItem("userType", "student");
-        navigation.navigate("Drawer");
-      } else {
-        Alert.alert("Hata", data.msg || "Giriş yapılamadı.");
-      }
-    } catch (error) {
-      console.log(error.message);
-      Alert.alert("Hata", "Sunucu hatası oluştu.");
+      console.error('Forgot password error:', error.message);
+      Alert.alert('Hata', error.response?.data?.msg || 'Bir hata oluştu.');
     } finally {
-      setLoading(false);
       setModalVisible(false);
     }
   };
 
-  
+  const handleLogin = async () => {
+    if (!schoolNo || !password) {
+      Alert.alert('Uyarı', 'Lütfen okul numarası ve şifrenizi giriniz.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await studentApi.post('/login', {
+        schoolNumber: parseInt(schoolNo),
+        password: password,
+      });
+
+      const data = response.data;
+
+      if (response.status === 200 && data.token) {
+        await AsyncStorage.setItem('token', data.token);
+        await AsyncStorage.setItem('userType', 'student');
+        navigation.navigate('Drawer');
+      } else {
+        Alert.alert('Hata', 'Giriş yapılamadı.');
+      }
+    } catch (error) {
+      const serverMessage = error?.response?.data?.msg || '';
+
+      let userFriendlyMessage = 'Bir hata oluştu. Lütfen tekrar deneyiniz.';
+
+      if (serverMessage.includes('Şifre hatalı')) {
+        userFriendlyMessage = 'Okul numaranız veya şifreniz yanlış. Lütfen tekrar deneyiniz.';
+      } else if (serverMessage.includes('Üniversitemize kayıtlı değilsiniz')) {
+        userFriendlyMessage = 'Okul numaranız veya şifreniz hatalı. Lütfen tekrar kontrol edin.';
+      } else if (serverMessage.includes('Mezun')) {
+        userFriendlyMessage = 'Lütfen "Mezun Girişi" ekranını kullanınız.';
+      }
+
+      Alert.alert('Hata', userFriendlyMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   return (
     <View className="flex-1 relative">
@@ -91,13 +98,13 @@ export default function Login() {
       <View className="absolute top-10 right-4 z-10">
         <TouchableOpacity
           className="flex-row items-center"
-          onPress={() => navigation.navigate("LoginOther")}
+          onPress={() => navigation.navigate('LoginOther')}
         >
           <Text className="text-base mr-2 font-bold text-blue-500">Mezun Girişi</Text>
           <IconRight name="chevron-with-circle-right" size={40} color="#3B82F6" />
         </TouchableOpacity>
       </View>
-  
+
       <KeyboardAwareScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         enableOnAndroid
@@ -109,14 +116,14 @@ export default function Login() {
             resizeMode="contain"
             className="w-7/12 h-40 mb-5"
           />
-  
+
           <Text
             className="text-2xl font-bold text-gray-800 mb-5"
-            style={{ fontFamily: "myFont" }}
+            style={{ fontFamily: fontsLoaded ? 'myFont' : undefined }}
           >
             AREL NETWORK
           </Text>
-  
+
           <View className="w-full mb-4">
             <TextInput
               label="Okul Numarası"
@@ -126,9 +133,10 @@ export default function Login() {
               activeOutlineColor="#4CAF50"
               outlineColor="#ccc"
               theme={{ colors: { primary: '#4CAF50' } }}
+              keyboardType="numeric"
             />
           </View>
-  
+
           <View className="w-full mb-4">
             <TextInput
               label="Şifre"
@@ -141,16 +149,16 @@ export default function Login() {
               theme={{ colors: { primary: '#4CAF50' } }}
               right={
                 <TextInput.Icon
-                  icon={showPassword ? "eye" : "eye-off"}
+                  icon={showPassword ? 'eye' : 'eye-off'}
                   onPress={() => setShowPassword(!showPassword)}
                 />
               }
             />
-            <TouchableOpacity className="mt-1 self-end" onPress={handleForgotSubmit}>
+            <TouchableOpacity className="mt-1 self-end" onPress={() => setModalVisible(true)}>
               <Text className="text-gray-500 text-sm mt-1">Şifremi Unuttum?</Text>
             </TouchableOpacity>
           </View>
-  
+
           <TouchableOpacity
             className="bg-blue-500 p-3 rounded-lg w-full mt-2"
             onPress={handleLogin}
@@ -160,7 +168,7 @@ export default function Login() {
           </TouchableOpacity>
         </View>
       </KeyboardAwareScrollView>
-  
+
       {/* Şifremi Unuttum Modal */}
       <Modal
         visible={modalVisible}
@@ -173,7 +181,7 @@ export default function Login() {
             <Text className="text-lg font-semibold text-center mb-4">
               TC Kimlik Numaranızı Girin
             </Text>
-  
+
             <TextInput
               label="TC Kimlik Numarası"
               value={tcNo}
@@ -185,7 +193,7 @@ export default function Login() {
               outlineColor="#ccc"
               theme={{ colors: { primary: '#4CAF50' } }}
             />
-  
+
             <View className="flex-row justify-end mt-4">
               <TouchableOpacity
                 className="bg-red-500 px-4 py-2 rounded-lg mr-2"
@@ -205,5 +213,4 @@ export default function Login() {
       </Modal>
     </View>
   );
-  
 }

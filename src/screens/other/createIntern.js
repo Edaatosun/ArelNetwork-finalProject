@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -8,39 +8,30 @@ import {
     Alert,
     KeyboardAvoidingView,
     Platform,
-    Keyboard, // Klavye olaylarını dinlemek için eklendi
+    Keyboard,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { graduateApi } from "../../connector/URL";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-// react-native-paper importları
 import { Checkbox, Dialog, Portal, Button as PaperButton } from 'react-native-paper';
 
 export default function CreateIntern() {
     const navigation = useNavigation();
 
-    // Form state variables
     const [internTitle, setInternTitle] = useState('');
     const [companyName, setCompanyName] = useState('');
     const [location, setLocation] = useState('');
     const [fromDate, setFromDate] = useState('');
     const [toDate, setToDate] = useState('');
     const [description, setDescription] = useState('');
-
-    // Date Picker Visibility
     const [showFromDatePicker, setShowFromDatePicker] = useState(false);
     const [showToDatePicker, setShowToDatePicker] = useState(false);
     const [selectedFromDateObj, setSelectedFromDateObj] = useState(null);
     const [selectedToDateObj, setSelectedToDateObj] = useState(null);
-
-    // Bölümler için state
     const [selectedFields, setSelectedFields] = useState([]);
     const [showFieldDialog, setShowFieldDialog] = useState(false);
-
-    // Klavye yüksekliğini tutmak için state
     const [keyboardHeight, setKeyboardHeight] = useState(0);
 
     const availableFields = [
@@ -57,22 +48,45 @@ export default function CreateIntern() {
         }
     };
 
-    const onFromDateChange = (intern, selectedDate) => {
+    const onFromDateChange = (event, selectedDate) => {
+        if (event.type === 'dismissed') {
+            setShowFromDatePicker(false);
+            return;
+        }
         const currentDate = selectedDate || selectedFromDateObj;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (currentDate < today) {
+            Alert.alert("Hata", "Bugünden önceki bir tarih seçilemez.");
+            return;
+        }
+
         setShowFromDatePicker(Platform.OS === 'ios');
-        if (currentDate) {
-            setSelectedFromDateObj(currentDate);
-            setFromDate(currentDate.toISOString().split('T')[0]);
+        setSelectedFromDateObj(currentDate);
+        setFromDate(currentDate.toISOString().split('T')[0]);
+
+        if (selectedToDateObj && currentDate > selectedToDateObj) {
+            setSelectedToDateObj(null);
+            setToDate('');
         }
     };
 
-    const onToDateChange = (intern, selectedDate) => {
-        const currentDate = selectedDate || selectedToDateObj;
-        setShowToDatePicker(Platform.OS === 'ios');
-        if (currentDate) {
-            setSelectedToDateObj(currentDate);
-            setToDate(currentDate.toISOString().split('T')[0]);
+    const onToDateChange = (event, selectedDate) => {
+        if (event.type === 'dismissed') {
+            setShowToDatePicker(false);
+            return;
         }
+
+        const currentDate = selectedDate || selectedToDateObj;
+        if (selectedFromDateObj && currentDate < selectedFromDateObj) {
+            Alert.alert("Hata", "Bitiş tarihi başlangıç tarihinden önce olamaz.");
+            return;
+        }
+
+        setShowToDatePicker(Platform.OS === 'ios');
+        setSelectedToDateObj(currentDate);
+        setToDate(currentDate.toISOString().split('T')[0]);
     };
 
     const handleCreateIntern = async () => {
@@ -97,7 +111,6 @@ export default function CreateIntern() {
         };
 
         try {
-            console.log("newIntern:", newIntern);
             const localToken = await AsyncStorage.getItem("token");
             if (!localToken) {
                 Alert.alert("Hata", "Giriş yapmanız gerekiyor.");
@@ -114,71 +127,38 @@ export default function CreateIntern() {
             if (response.status === 200) {
                 Alert.alert('Başarılı', 'Staj ilanı başarıyla oluşturuldu.');
                 navigation.goBack();
-                setInternTitle('');
-                setCompanyName('');
-                setLocation('');
-                setFromDate('');
-                setToDate('');
-                setDescription('');
-                setSelectedFields([]);
-                setSelectedFromDateObj(null);
-                setSelectedToDateObj(null);
             } else {
                 Alert.alert('Hata', response.data?.message || 'Staj ilanı oluşturulurken bir hata oluştu.');
             }
         } catch (error) {
-            console.error('Staj ilanı oluşturulurken bir hata oluştu:', error);
             Alert.alert('Hata', error.response?.data?.message || 'Beklenmeyen bir hata oluştu.');
         }
     };
 
-    // Klavye açıldığında ve kapandığında padding'i ayarlamak için useEffect kullanıyoruz
-    React.useEffect(() => {
-        const keyboardDidShowListener = Keyboard.addListener(
-            'keyboardDidShow',
-            (e) => {
-                setKeyboardHeight(e.endCoordinates.height);
-            }
-        );
-        const keyboardDidHideListener = Keyboard.addListener(
-            'keyboardDidHide',
-            () => {
-                setKeyboardHeight(0);
-            }
-        );
-
+    useEffect(() => {
+        const showListener = Keyboard.addListener('keyboardDidShow', e => setKeyboardHeight(e.endCoordinates.height));
+        const hideListener = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
         return () => {
-            keyboardDidHideListener.remove();
-            keyboardDidShowListener.remove();
+            showListener.remove();
+            hideListener.remove();
         };
     }, []);
 
-    const displayFromDate = fromDate
-        ? new Date(fromDate).toLocaleDateString('tr-TR')
-        : '';
-
-    const displayToDate = toDate
-        ? new Date(toDate).toLocaleDateString('tr-TR')
-        : '';
-
-
+    const displayFromDate = fromDate ? new Date(fromDate).toLocaleDateString('tr-TR') : '';
+    const displayToDate = toDate ? new Date(toDate).toLocaleDateString('tr-TR') : '';
 
     return (
         <KeyboardAvoidingView
             className="flex-1"
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0} // iOS için offset gerekebilir
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
             <View className="flex-1 px-5 bg-gray-100">
                 <ScrollView
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{
-                        paddingBottom: 50 + keyboardHeight, // Klavye yüksekliği kadar ekstra padding
-                    }}
-                    // klavye açıldığında TextInput'un görünür olmasını sağlamak için ek ayarlar
-                    keyboardShouldPersistTaps="handled" // Klavye açıkken dokunmaların düzgün çalışmasını sağlar
+                    contentContainerStyle={{ paddingBottom: 50 + keyboardHeight }}
+                    keyboardShouldPersistTaps="handled"
                 >
-                    {/* Staj İlan Başlığı */}
                     <Text className="text-gray-800 font-semibold mb-2 mt-4">Staj İlanı Başlığı</Text>
                     <TextInput
                         className="bg-white p-4 rounded-lg text-gray-800 shadow-sm border border-gray-300"
@@ -188,7 +168,6 @@ export default function CreateIntern() {
                         placeholderTextColor="#A9A9A9"
                     />
 
-                    {/* Bölüm Seçimi */}
                     <Text className="text-gray-800 font-semibold mt-4 mb-2">Bölümler</Text>
                     <TouchableOpacity
                         className="bg-white p-4 rounded-lg shadow-sm border border-gray-300 flex-row justify-between items-center"
@@ -200,7 +179,6 @@ export default function CreateIntern() {
                         <Icon name="chevron-down-outline" size={20} color="#A9A9A9" />
                     </TouchableOpacity>
 
-                    {/* Firma Adı */}
                     <Text className="text-gray-800 font-semibold mb-2 mt-4">Firma Adı</Text>
                     <TextInput
                         className="bg-white p-4 rounded-lg text-gray-800 shadow-sm border border-gray-300"
@@ -210,7 +188,6 @@ export default function CreateIntern() {
                         placeholderTextColor="#A9A9A9"
                     />
 
-                    {/* Yer (Konum) */}
                     <Text className="text-gray-800 font-semibold mb-2 mt-4">Yer</Text>
                     <View className="bg-white p-2 rounded-lg shadow-sm flex-row items-center justify-between border border-gray-300">
                         <TextInput
@@ -223,7 +200,6 @@ export default function CreateIntern() {
                         <Icon name="location-sharp" size={18} color="#6B7280" />
                     </View>
 
-                    {/* Tarih Seçiciler */}
                     <View className="flex-row justify-between items-center mt-4">
                         <View className="flex-1 mr-2">
                             <Text className="text-gray-800 font-semibold mb-2">Başlangıç Tarihi</Text>
@@ -248,7 +224,6 @@ export default function CreateIntern() {
                         </View>
                     </View>
 
-                    {/* Tarih Seçici Modals */}
                     {showFromDatePicker && (
                         <DateTimePicker
                             value={selectedFromDateObj || new Date()}
@@ -256,19 +231,20 @@ export default function CreateIntern() {
                             is24Hour={true}
                             onChange={onFromDateChange}
                             display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                            minimumDate={new Date()}
                         />
                     )}
                     {showToDatePicker && (
                         <DateTimePicker
-                            value={selectedToDateObj || new Date()}
+                            value={selectedToDateObj || (selectedFromDateObj || new Date())}
                             mode="date"
                             is24Hour={true}
                             onChange={onToDateChange}
                             display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                            minimumDate={selectedFromDateObj || new Date()}
                         />
                     )}
 
-                    {/* Açıklama */}
                     <Text className="text-gray-800 font-semibold mb-2 mt-4">Açıklama</Text>
                     <TextInput
                         className="bg-white p-4 rounded-lg text-gray-800 h-32 shadow-sm border border-gray-300"
@@ -280,7 +256,6 @@ export default function CreateIntern() {
                         textAlignVertical="top"
                     />
 
-                    {/* Staj ilanı Oluştur Butonu */}
                     <TouchableOpacity
                         onPress={handleCreateIntern}
                         className="bg-green-600 p-4 rounded-lg mt-4 mb-10 items-center shadow-md active:bg-green-700"
@@ -290,7 +265,6 @@ export default function CreateIntern() {
                 </ScrollView>
             </View>
 
-            {/* Bölüm Seçim Diyaloğu */}
             <Portal>
                 <Dialog visible={showFieldDialog} onDismiss={() => setShowFieldDialog(false)} className="rounded-lg">
                     <Dialog.Title className="text-lg font-bold text-gray-800">Bölüm Seçin</Dialog.Title>

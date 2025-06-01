@@ -26,9 +26,15 @@ export default function ProfileOther() {
 
             if (response.data && response.data.info) {
                 setUserInfo(response.data.info);
-                setPhoto(response.data.info.photo);
+                console.log(response.data.info.photo);
+                // Önbelleği kırmak için zaman ekliyoruz
+                const photoUrl = response.data.info.photo
+                    ? `${response.data.info.photo}?t=${Date.now()}`
+                    : null;
+                setPhoto(photoUrl);
                 setCvUrl(response.data.info.resume);
             }
+            console.log("photoooooooooo", photo);
         } catch (error) {
             console.error("Kullanıcı bilgileri çekilirken hata:", error);
         }
@@ -255,7 +261,7 @@ export default function ProfileOther() {
 
     const InfoItem = ({ label, value }) => (
         <View className="flex-row justify-between items-center bg-[#b6dcfa] p-3 rounded-xl mb-2">
-            
+
             <Text
                 className="text-[#0f172a] mr-2"
                 numberOfLines={1}
@@ -352,7 +358,7 @@ export default function ProfileOther() {
                                 </TouchableOpacity>
                             )}
 
-                            {/* Fotoğraf silme butonu da üçlü operatör ile güncellendi */}
+                            {/* Fotoğraf silme butonu*/}
                             {photo ? (
                                 <View className="flex-row items-center bg-red-600 p-4 rounded-2xl shadow-md justify-center">
                                     <TouchableOpacity
