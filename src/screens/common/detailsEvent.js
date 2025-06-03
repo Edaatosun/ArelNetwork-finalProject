@@ -22,6 +22,7 @@ export default function DetailsEvent() {
 
     const [isEventOwner, setIsEventOwner] = useState(false);
     const [userType, setUserType] = useState(null);
+    const isExpired = event?.toDate ? new Date(event.toDate) < new Date() : false;
 
     useEffect(() => {
         const getUserType = async () => {
@@ -387,27 +388,28 @@ export default function DetailsEvent() {
 
             {!isEditMode && !isEventOwner && (
                 <View className="p-4 pt-0 mb-10 mt-2">
-                    {isApplied ? (
+                    {isExpired ? (
+                        <View className="bg-gray-400 p-4 rounded-lg items-center justify-center">
+                            <Text className="text-white font-bold text-lg">İlan süresi dolmuştur</Text>
+                        </View>
+                    ) : isApplied ? (
                         <TouchableOpacity
                             onPress={handleCancelApplication}
                             className="bg-red-600 p-4 rounded-lg items-center justify-center"
                         >
-                            <Text className="text-white font-bold text-lg">
-                                İptal Et
-                            </Text>
+                            <Text className="text-white font-bold text-lg">İptal Et</Text>
                         </TouchableOpacity>
                     ) : (
                         <TouchableOpacity
                             onPress={handleApply}
                             className="bg-blue-600 p-4 rounded-lg items-center justify-center"
                         >
-                            <Text className="text-white font-bold text-lg">
-                                Katıl
-                            </Text>
+                            <Text className="text-white font-bold text-lg">Katıl</Text>
                         </TouchableOpacity>
                     )}
                 </View>
             )}
+
 
             {isEditMode ? (
                 <View className="p-4 pt-0 mb-10 mt-2">

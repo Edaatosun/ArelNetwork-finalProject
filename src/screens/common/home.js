@@ -7,14 +7,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from '@react-navigation/native';
 import { commonApi } from '../../connector/URL';
 import DropDownPicker from 'react-native-dropdown-picker';
-import { ActivityIndicator } from 'react-native-paper';
 
 export default function Home() {
     const navigation = useNavigation();
     const [searchQuery, setSearchQuery] = useState('');
 
     const [selectedTab, setSelectedTab] = useState('İş İlanları');
-    const [showFilterModal, setShowFilterModal] = useState(false);
+    const [showFilterModal, setShowFilterModal] = useState(false); // Renamed for clarity
 
     const [activities, setActivities] = useState([]);
     const [jobData, setJobData] = useState([]);
@@ -22,18 +21,16 @@ export default function Home() {
 
     const [selectedLocation, setSelectedLocation] = useState(null);
     const [selectedCompany, setSelectedCompany] = useState(null);
-    const [selectedDepartment, setSelectedDepartment] = useState(null);
+    const [selectedDepartment, setSelectedDepartment] = useState(null); // Changed initial state to null
 
     const [locationOpen, setLocationOpen] = useState(false);
     const [companyOpen, setCompanyOpen] = useState(false);
     const [departmentOpen, setDepartmentOpen] = useState(false);
 
-    const [loading, setLoading] = useState(false);
-
     // Filter data for DropDownPickers
     const uniqueDepartments = useMemo(() => {
         const departments = [
-            "Tümü",
+            "Tümü", // Add "Tümü" option for departments
             "Bilgisayar Mühendisliği",
             "Elektrik-Elektronik Mühendisliği",
             "Makine Mühendisliği",
@@ -80,16 +77,13 @@ export default function Home() {
 
             if (response.status === 400 || !response.data.events || response.data.msg) {
                 setActivities([]);
-                setLoading(false);
             } else {
                 setActivities(response.data.events);
-                setLoading(false);
             }
 
         } catch (error) {
             console.log("Etkinlikler alınırken hata oluştu:", error.response || error);
             setActivities([]);
-            setLoading(false);
         }
     };
 
@@ -103,18 +97,15 @@ export default function Home() {
                 },
             });
             setJobData(response.data.jobs);
-            console.log(response.data.jobs);
-            setLoading(false);
+
         } catch (error) {
             console.error("İş ilanları alınırken hata oluştu");
             console.log(error);
-            setLoading(false);
 
             if (error.response?.status === 400) {
                 await AsyncStorage.removeItem("token");
                 await AsyncStorage.removeItem("userType");
                 navigation.navigate("MainScreen");
-                setLoading(false);
             }
         }
     };
@@ -129,10 +120,8 @@ export default function Home() {
                 },
             });
             setInternshipData(response.data.interns);
-            setLoading(false);
         } catch (error) {
             console.error("Staj ilanları alınırken hata oluştu:", error.response || error);
-            setLoading(false);
         }
     };
 
@@ -267,8 +256,6 @@ export default function Home() {
 
     // Function to fetch all data based on the current tab (for "İptal" button)
     const fetchAllDataBasedOnTab = useCallback(() => {
-        setLoading(true);
-
         if (selectedTab === 'İş İlanları') {
             fetchJobData();
         } else if (selectedTab === 'Staj İlanları') {
@@ -303,7 +290,6 @@ export default function Home() {
         }, [selectedTab])
     );
 
-    // card yapısı
     const renderCard = ({ item }) => {
         const isActivity = selectedTab === 'Etkinlikler';
         const isJob = selectedTab === 'İş İlanları';
@@ -315,68 +301,69 @@ export default function Home() {
         let startDate = '';
         let endDate = '';
         let field = '';
+        let targetScreen = '';
+        let endDateRaw = null;
 
+        // 📌 Türlere göre alanları doldur
         if (isActivity) {
             title = item.eventTitle;
             company = item.company;
             location = item.location;
-            startDate = item.fromDate
-                ? `${new Date(item.fromDate).toLocaleDateString('tr-TR')}`
-                : 'Tarih Yok';
-            endDate = item.toDate
-                ? `${new Date(item.toDate).toLocaleDateString('tr-TR')}`
-                : 'Tarih Yok';
+            startDate = item.fromDate ? new Date(item.fromDate).toLocaleDateString('tr-TR') : 'Tarih Yok';
+            endDate = item.toDate ? new Date(item.toDate).toLocaleDateString('tr-TR') : 'Tarih Yok';
+            endDateRaw = item.toDate ? new Date(item.toDate) : null;
             field = item.eventField;
             targetScreen = "DetailsEvent";
-
         } else if (isJob) {
             title = item.jobTitle;
             company = item.company;
             location = item.location;
-            startDate = item.fromDate
-                ? `${new Date(item.fromDate).toLocaleDateString('tr-TR')}`
-                : 'Tarih Yok';
-            endDate = item.toDate
-                ? `${new Date(item.toDate).toLocaleDateString('tr-TR')}`
-                : 'Tarih Yok';
+            startDate = item.fromDate ? new Date(item.fromDate).toLocaleDateString('tr-TR') : 'Tarih Yok';
+            endDate = item.toDate ? new Date(item.toDate).toLocaleDateString('tr-TR') : 'Tarih Yok';
+            endDateRaw = item.toDate ? new Date(item.toDate) : null;
             field = item.jobField;
             targetScreen = "DetailsJob";
-
         } else if (isInternship) {
             title = item.internTitle;
             company = item.company;
             location = item.location;
-            startDate = item.fromDate
-                ? `${new Date(item.fromDate).toLocaleDateString('tr-TR')}`
-                : 'Tarih Yok';
-            endDate = item.toDate
-                ? `${new Date(item.toDate).toLocaleDateString('tr-TR')}`
-                : 'Tarih Yok';
+            startDate = item.fromDate ? new Date(item.fromDate).toLocaleDateString('tr-TR') : 'Tarih Yok';
+            endDate = item.toDate ? new Date(item.toDate).toLocaleDateString('tr-TR') : 'Tarih Yok';
+            endDateRaw = item.toDate ? new Date(item.toDate) : null;
             field = item.internField;
             targetScreen = 'DetailsIntern';
         }
 
+        // 📌 Tarihe göre aktiflik/pasiflik kontrolü
+        const isExpired = endDateRaw ? endDateRaw < new Date() : false;
+        const statusLabel = isExpired ? 'Pasif' : 'Aktif';
+        const statusColor = isExpired ? 'bg-red-500' : 'bg-green-500';
+
         return (
             <TouchableOpacity
                 className="mb-4 border border-gray-200 rounded-lg"
-                onPress={() =>
-                    navigation.navigate(targetScreen, {
-                        item_id: item._id
-                    })
-                }
+                onPress={() => navigation.navigate(targetScreen, { item_id: item._id })}
             >
-                {/* Üst - Şirket İsmi */}
-                <View className="flex-row items-center p-2 bg-gray-100 ">
-                    <Text className="ml-2 font-bold text-lg text-black">{company}</Text>
+                {/* 🔹 Üst Satır - Şirket Adı + Aktif/Pasif Etiketi */}
+                <View className="flex-row items-center justify-between p-2 bg-gray-100">
+                    <Text
+                        className="font-bold text-lg text-black flex-1 mr-2"
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                    >
+                        {company}
+                    </Text>
+                    <View className={`px-2 py-1 rounded-full ${statusColor}`}>
+                        <Text className="text-white text-xs font-semibold">{statusLabel}</Text>
+                    </View>
                 </View>
 
-                {/* Alt - İçerik */}
+                {/* 🔹 Kart İçeriği */}
                 <View className="bg-white p-4 rounded-b-xl">
                     {/* Başlık */}
-                    <View className=" items-start mb-1">
+                    <View className="items-start mb-1">
                         <Text
                             className="font-bold text-lg text-red-600 mb-2"
-                            style={{ flexShrink: 1 }}
                             numberOfLines={1}
                             ellipsizeMode="tail"
                         >
@@ -390,45 +377,30 @@ export default function Home() {
                         <Text className="ml-2 text-black">{location}</Text>
                     </View>
 
+                    {/* Tarih */}
                     <View className="flex-row items-center mb-2">
                         <Icon name="calendar" size={16} color="black" />
-                        <Text className="ml-2 text-black">
-                            {startDate}
-                            {` - ${endDate}`}
-                        </Text>
+                        <Text className="ml-2 text-black">{startDate} - {endDate}</Text>
                     </View>
 
                     {/* Branş */}
-
                     <View className="flex-row items-center mb-4">
                         <FontAwesome5 name="award" size={16} color="black" />
                         <Text className="ml-2 text-black">{field}</Text>
                     </View>
 
-                    <TouchableOpacity onPress={() =>
-                        navigation.navigate(targetScreen, {
-                            item_id: item._id
-                        })
-                    } className="bg-blue-700 rounded-md py-2">
+                    {/* Buton */}
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate(targetScreen, { item_id: item._id })}
+                        className="bg-blue-700 rounded-md py-2"
+                    >
                         <Text className="text-white text-center font-semibold">İlana Git</Text>
                     </TouchableOpacity>
-
                 </View>
             </TouchableOpacity>
         );
-
     };
 
-
-
-    if (loading) {
-            return (
-                <View className="flex-1 justify-center items-center bg-white">
-                    <ActivityIndicator size="large" color="#0000ff" />
-                    <Text className="mt-2 text-gray-600">İlanlar yükleniyor...</Text>
-                </View>
-            );
-        }
 
 
     return (

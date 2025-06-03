@@ -22,6 +22,7 @@ export default function DetailsIntern() {
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
     const [isInternOwner, setIsInternOwner] = useState(false);
     const [userType, setUserType] = useState(null);
+    const isExpired = intern?.toDate ? new Date(intern.toDate) < new Date() : false;
 
 
     useEffect(() => {
@@ -405,16 +406,23 @@ export default function DetailsIntern() {
 
             {!isEditMode && !isInternOwner && (
                 <View className="p-4 pt-0 mb-10 mt-2">
-                    <TouchableOpacity
-                        onPress={handleApply}
-                        disabled={isApplied && !resumeData}
-                        className={`${isApplied && resumeData ? 'bg-green-600' : (isApplied ? 'bg-gray-400' : 'bg-blue-600')} p-4 rounded-lg items-center justify-center`}
-                    >
-                        <Text className="text-white font-bold text-lg">
-                            {isApplied ? (resumeData ? 'CV\'yi GÖR' : 'Başvuruldu (CV Yok)') : 'CV Gönder'}
-                        </Text>
-                    </TouchableOpacity>
+                    {isExpired ? (
+                        <View className="bg-gray-400 p-4 rounded-lg items-center justify-center">
+                            <Text className="text-white font-bold text-lg">İlan süresi dolmuştur</Text>
+                        </View>
+                    ) : (
+                        <TouchableOpacity
+                            onPress={handleApply}
+                            disabled={isApplied && !resumeData}
+                            className={`${isApplied && resumeData ? 'bg-green-600' : (isApplied ? 'bg-gray-400' : 'bg-blue-600')} p-4 rounded-lg items-center justify-center`}
+                        >
+                            <Text className="text-white font-bold text-lg">
+                                {isApplied ? (resumeData ? 'CV\'yi GÖR' : 'Başvuruldu (CV Yok)') : 'CV Gönder'}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
+
             )}
 
             {isEditMode ? (
