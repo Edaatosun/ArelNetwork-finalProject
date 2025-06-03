@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, Image, Modal, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, Image, Modal, TouchableWithoutFeedback, BackHandler } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -26,6 +26,18 @@ export default function Home() {
     const [locationOpen, setLocationOpen] = useState(false);
     const [companyOpen, setCompanyOpen] = useState(false);
     const [departmentOpen, setDepartmentOpen] = useState(false);
+
+     useFocusEffect(
+        useCallback(() => {
+            const onBackPress = () => {
+                return true; // geri tuşunu engelle
+            };
+
+            const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+            return () => subscription.remove(); 
+        }, [])
+    );
 
     // Filter data for DropDownPickers
     const uniqueDepartments = useMemo(() => {
