@@ -168,12 +168,14 @@ export default function ProfileStudent() {
     };
 
     // CV'yi görüntüle
-    const openCvProfile = () => {
+    const openCvProfile = async () => {
         if (cvUrl) {
-            Linking.openURL(cvUrl).catch(err => {
-                console.error("CV açılırken hata oluştu:", err);
-                Alert.alert("Hata", "CV açılamadı. Cihazınızda PDF görüntüleyici olduğundan emin olun veya URL'yi kontrol edin.");
-            });
+            console.log(cvUrl);
+            const supported = await Linking.canOpenURL(cvUrl);
+            if (supported) {
+                await Linking.openURL(cvUrl);
+            }
+
         } else {
             Alert.alert("Hata", "Görüntülenecek bir CV bulunamadı.");
         }

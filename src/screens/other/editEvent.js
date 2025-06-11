@@ -213,8 +213,8 @@ export default function EditEvent() {
             keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
             <View className="flex-1 bg-gray-100">
-                {loading && (
-                    <View className="absolute inset-0 z-10 justify-center items-center bg-black bg-opacity-30">
+                 {loading && (
+                    <View className="absolute top-0 left-0 right-0 bottom-0 z-50 justify-center items-center bg-white bg-opacity-60">
                         <ActivityIndicator size="large" color="#0000ff" />
                     </View>
                 )}

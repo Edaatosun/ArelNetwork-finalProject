@@ -214,11 +214,12 @@ export default function EditJob() {
             keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
             <View className="flex-1 bg-gray-100">
-                {loading && (
-                    <View className="absolute inset-0 z-10 justify-center items-center bg-black bg-opacity-30">
+                 {loading && (
+                    <View className="absolute top-0 left-0 right-0 bottom-0 z-50 justify-center items-center bg-white bg-opacity-60">
                         <ActivityIndicator size="large" color="#0000ff" />
                     </View>
                 )}
+
                 {/* Header */}
                 <View className="p-4 flex-row items-center mt-5 bg-gray-100 z-10">
                     <TouchableOpacity onPress={() => navigation.goBack()}>
