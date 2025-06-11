@@ -61,7 +61,7 @@ export default function ChatScreen({ route }) {
       socket.on("connect", async () => {
         try {
           await commonApi.post(
-            "/messages/join",
+            "/join-room",
             { receiver_id },
             { headers: { Authorization: `Bearer ${token}` } }
           );
@@ -100,7 +100,7 @@ export default function ChatScreen({ route }) {
     try {
       const token = await AsyncStorage.getItem("token");
       await commonApi.post(
-        "/messages/send",
+        "/send-messages",
         { receiver_id, message: inputText.trim() },
         { headers: { Authorization: `Bearer ${token}` } }
       );

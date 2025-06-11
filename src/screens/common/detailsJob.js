@@ -467,15 +467,15 @@ export default function DetailsJob() {
                         </View>
 
                         <View className="flex-row items-center mb-2">
-                            <Icon name="location-outline" size={20} color="#4B5563" />
-                            <Text className="mx-2 text-gray-700 text-base">
+                            <Icon name="location-outline" size={20} color="blue" />
+                            <Text className="mx-2 text-blue-500 text-base">
                                 {job.location}
                             </Text>
                         </View>
 
                         <View className="flex-row items-center mb-2">
-                            <Icon name="calendar-outline" size={20} color="#4B5563" />
-                            <Text className="mx-2 text-gray-700 text-base">
+                            <Icon name="calendar-outline" size={20} color="#660099" />
+                            <Text className="mx-2 text-[#660099] text-base">
                                 {job.fromDate
                                     ? new Date(job.fromDate).toLocaleDateString("tr-TR")
                                     : "Tarih Yok"}{" "}
@@ -488,8 +488,8 @@ export default function DetailsJob() {
 
                         {job.jobField && job.jobField.length > 0 && (
                             <View className="flex-row items-center mb-4">
-                                <FontAwesome5 name="building" size={18} color="#4B5563" />
-                                <Text className="mx-2 text-gray-700 text-base">
+                                <FontAwesome5 name="building" size={18} color="red" />
+                                <Text className="mx-2 text-red-500 text-base">
                                     {Array.isArray(job.jobField)
                                         ? job.jobField.join(", ")
                                         : job.jobField}

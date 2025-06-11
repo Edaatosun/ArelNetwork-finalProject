@@ -351,21 +351,21 @@ export default function DetailsEvent() {
                         </View>
 
                         <View className="flex-row items-center mb-2">
-                            <Icon name="location-outline" size={20} color="#4B5563" />
-                            <Text className="ml-2 text-gray-700 text-base">{event.location}</Text>
+                            <Icon name="location-outline" size={20} color="blue" />
+                            <Text className="ml-2 text-blue-500 text-base">{event.location}</Text>
                         </View>
 
                         <View className="flex-row items-center mb-2">
-                            <Icon name="calendar-outline" size={20} color="#4B5563" />
-                            <Text className="ml-2 text-gray-700 text-base">
+                            <Icon name="calendar-outline" size={20} color="#660099" />
+                            <Text className="ml-2 text-[#660099] text-base">
                                 {event.fromDate ? new Date(event.fromDate).toLocaleDateString('tr-TR') : 'Tarih Yok'} - {event.toDate ? new Date(event.toDate).toLocaleDateString('tr-TR') : 'Tarih Yok'}
                             </Text>
                         </View>
 
                         {event.eventField && event.eventField.length > 0 && (
                             <View className="flex-row items-center mb-4">
-                                <FontAwesome5 name="building" size={18} color="#4B5563" />
-                                <Text className="ml-2 text-gray-700 text-base">
+                                <FontAwesome5 name="building" size={18} color="red" />
+                                <Text className="ml-2 text-red-500 text-base">
                                     {Array.isArray(event.eventField) ? event.eventField.join(', ') : event.eventField}
                                 </Text>
                             </View>
