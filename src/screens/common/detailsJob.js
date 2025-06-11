@@ -1,23 +1,6 @@
-// 🔧 Optimize edilmiş DetailsJob bileşeni: Çökme sorunlarına karşı güncellenmiş sürüm
-
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    ScrollView,
-    ActivityIndicator,
-    Alert,
-    Image,
-    Dimensions,
-    Linking,
-    Modal,
-} from "react-native";
-import {
-    useFocusEffect,
-    useNavigation,
-    useRoute,
-} from "@react-navigation/native";
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image, Linking, Modal, } from "react-native";
+import { useFocusEffect, useNavigation, useRoute, } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
 import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -30,6 +13,7 @@ export default function DetailsJob() {
     const route = useRoute();
     const { item_id } = route.params;
     const isEditMode = route.params?.isEditMode || false;
+
     const [job, setJob] = useState(null);
     const [loading, setLoading] = useState(false);
     const [isApplied, setIsApplied] = useState(false);
@@ -37,8 +21,12 @@ export default function DetailsJob() {
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
     const [isJobOwner, setIsJobOwner] = useState(false);
     const [userType, setUserType] = useState(null);
+    // ilan tarihi geçmiş mi 
     const isExpired = job?.toDate ? new Date(job.toDate) < new Date() : false;
+    // ilan başlangıç tarihi başlamış mı?
+    const isUpcoming = job?.fromDate ? new Date(job.fromDate) > new Date() : false;
 
+    // userType ı alıyoruz sayfa açılır açılmaz
     useEffect(() => {
         const getUserType = async () => {
             const type = await AsyncStorage.getItem("userType");
@@ -47,6 +35,7 @@ export default function DetailsJob() {
         getUserType();
     }, []);
 
+    // userType ve token varsa fetche gidiyor
     useEffect(() => {
         if (!userType) return;
         console.log("userType", userType);
@@ -66,6 +55,7 @@ export default function DetailsJob() {
             await checkIfApplied(localToken);
         };
 
+        //fetchlerr
         const fetchJobDetails = async (token) => {
             try {
                 setLoading(true);
@@ -107,7 +97,6 @@ export default function DetailsJob() {
                         "Content-Type": "application/json",
                     },
                 });
-                console.log(response);
                 if (response.status === 200 && response.data.message === "Başvuru yapılmış.") {
                     setIsApplied(true);
                     setResumeData(response.data.resume);
@@ -134,112 +123,7 @@ export default function DetailsJob() {
         fetchData();
     }, [userType]);
 
-    /*  useFocusEffect(
-      useCallback(() => {
-        if (!userType) return; // userType yüklenmeden fetchData çağrılmasın
-  
-        const fetchData = async () => {
-          const localToken = await AsyncStorage.getItem("token");
-          if (!localToken) return;
-  
-          await fetchJobDetails(localToken);
-  
-          if (userType !== "student") {
-            await checkIsOwner(localToken);
-          } else {
-            setIsJobOwner(false);
-          }
-  
-          await checkIfApplied(localToken);
-        };
-  
-        const fetchJobDetails = async (token) => {
-          try {
-            setLoading(true);
-            const response = await commonApi.get(`/get/job/${item_id}`, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-              },
-            });
-            if (isActive) {
-              setJob(response.data.job);
-            }
-          } catch (error) {
-            if (isActive) {
-              Alert.alert("Hata", "İlan detayları yüklenirken bir sorun oluştu.");
-              setJob(null);
-            }
-          } finally {
-            if (isActive) setLoading(false);
-          }
-        };
-  
-        const checkIsOwner = async (token) => {
-          try {
-            const response = await graduateApi.get(`/jobs/${item_id}/isOwner`, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-              },
-            });
-            if (isActive) setIsJobOwner(response.data.isOwner);
-          } catch (error) {
-            if (isActive) {
-              setIsJobOwner(false);
-              Alert.alert(
-                "Hata",
-                "İlan sahibi kontrol edilirken bir sorun oluştu."
-              );
-            }
-          }
-        };
-  
-        const checkIfApplied = async (token) => {
-          try {
-            const response = await commonApi.get(`/check/myJob/${item_id}`, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-              },
-            });
-            if (isActive) {
-              if (
-                response.status === 200 &&
-                response.data.message === "Başvuru yapılmış."
-              ) {
-                setIsApplied(true);
-                setResumeData(response.data.resume);
-              } else {
-                setIsApplied(false);
-                setResumeData(null);
-              }
-            }
-          } catch (error) {
-            if (isActive) {
-              setIsApplied(false);
-              setResumeData(null);
-              if (!(error.response && error.response.status === 404)) {
-                Alert.alert(
-                  "Hata",
-                  "Başvuru durumu kontrol edilirken bir sorun oluştu."
-                );
-              }
-            }
-          }
-        };
-  
-        fetchData();
-        return () => {
-          isActive = false;
-          setJob(null);
-          setIsApplied(false);
-          setResumeData(null);
-          setIsJobOwner(false);
-        };
-      }, [item_id, userType])
-    ); */
-
+    //CV gönder fonksiyonu
     const handleApply = async () => {
         if (isApplied) {
             // Eğer isApplied true ise, CV'yi gösterme işlevini çalıştır
@@ -289,19 +173,16 @@ export default function DetailsJob() {
                 return;
             }
 
-            const { uri, name, mimeType, size } = result.assets[0];
+            const { uri, name, mimeType } = result.assets[0];
 
             // FormData oluştur
             const formData = new FormData();
-            formData.append("_id", item_id); // Backend'de req.body.jobId olarak alınacak
+            formData.append("_id", item_id);
             formData.append("resume", {
-                // Backend'de req.file olarak alınacak
                 uri: uri,
                 name: name,
                 type: mimeType || "application/pdf", // mimeType bulunamazsa varsayılan
             });
-
-            console.log("Gönderilen FormData:", formData); // Debug için
 
             const response = await commonApi.post(`/apply/job`, formData, {
                 headers: {
@@ -334,9 +215,14 @@ export default function DetailsJob() {
                 Alert.alert("Hata", "Beklenmeyen bir hata oluştu.");
             }
         } finally {
-            setLoading(false); // Yükleme durumunu kapat
+            setLoading(false);
         }
     };
+
+    // renderRichText: Metni parçalayıp, düzenli şekilde <Text> bileşenleri olarak ekrana basar
+    // Parametreler:
+    // - text: Gösterilecek metin
+    // - type: Liste mi yoksa paragraf mı olduğunu belirtir
 
     const renderRichText = (text, type = "paragraph") => {
         if (!text) return null;
@@ -378,26 +264,23 @@ export default function DetailsJob() {
         );
     }
 
+    //edit  moddaki silme işlemi
     const handleDelete = async () => {
         try {
-            setLoading(true);
-            console.log("heyyyy");
             setDeleteModalVisible(false);
             const localToken = await AsyncStorage.getItem("token");
-            console.log();
-            console.log(job._id);
             const response = await graduateApi.delete(`/job/${job._id}`, {
                 headers: {
                     Authorization: `Bearer ${localToken}`,
                     "Content-Type": "application/json",
                 },
             });
+            if (response.status === 200) {
+                navigation.goBack(); 
+                Alert.alert("Başarılı", "Silindi");
+            }
 
-            Alert.alert("Başarılı", "Silindi");
-            navigation.goBack();
-            setLoading(false);
         } catch (err) {
-            setLoading(false);
             Alert.alert("Hata", "yeniden deneyiniz!");
             console.error(err);
         }
@@ -453,7 +336,7 @@ export default function DetailsJob() {
                     {/* Ayırıcı Çizgi */}
                     <View className="border-b border-gray-300 mx-4 my-4" />
 
-                    {/* Temel Bilgiler (Tek Sütun) */}
+                    {/* Temel Bilgiler */}
                     <View className="p-4">
                         <Text className="text-2xl font-bold mb-4 text-black ">
                             {job.jobTitle}
@@ -498,7 +381,7 @@ export default function DetailsJob() {
                         )}
                     </View>
 
-                    {/* Açıklama ve Diğer Detaylar */}
+                    {/* Açıklama */}
                     <View className="px-4">
                         {job.description && (
                             <View className="mb-4">
@@ -518,6 +401,10 @@ export default function DetailsJob() {
                     {isExpired ? (
                         <View className="bg-gray-400 p-4 rounded-lg items-center justify-center">
                             <Text className="text-white font-bold text-lg">İlan süresi dolmuştur</Text>
+                        </View>
+                    ) : isUpcoming ? (
+                        <View className="bg-yellow-500 p-4 rounded-lg items-center justify-center">
+                            <Text className="text-white font-bold text-lg">İlan henüz açılmamıştır</Text>
                         </View>
                     ) : (
                         <TouchableOpacity

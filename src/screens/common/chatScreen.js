@@ -1,16 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-  Keyboard,
-  Image,
-} from "react-native";
+import { View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, Alert, Keyboard, Image } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
@@ -28,8 +17,9 @@ export default function ChatScreen({ route }) {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const socketRef = useRef(null);
-  const flatListRef = useRef(null);
+  const flatListRef = useRef(null); // Scroll işlemi için
 
+  // mesaj geçmişini getirir
   const getMessages = async () => {
     try {
       const token = await AsyncStorage.getItem("token");
@@ -37,6 +27,7 @@ export default function ChatScreen({ route }) {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMessages(res.data.messages);
+      // Sayfa yüklendikten sonra otomatik olarak en alta kaydır
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 50);
@@ -46,25 +37,27 @@ export default function ChatScreen({ route }) {
   };
 
   useEffect(() => {
-    let isMounted = true;
+    let isMounted = true; // Bileşen unmount edilirse state güncellenmesin diye kontrol için
 
     const setupSocket = async () => {
       const token = await AsyncStorage.getItem("token");
       if (!token) return;
 
+      // Socket bağlantısı kur
       const socket = io(BASE_URL, {
         query: { token },
         transports: ["websocket"],
       });
       socketRef.current = socket;
-
+      // Bağlantı kurulduğunda odalara katıl
       socket.on("connect", async () => {
         try {
-          await commonApi.post(
-            "/join-room",
-            { receiver_id },
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
+          await commonApi.post("/join-room", { receiver_id }, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+          // Bileşen hala aktifse mesajları getir
           if (isMounted) await getMessages();
         } catch (err) {
           console.error("Katılım hatası:", err);
@@ -72,13 +65,14 @@ export default function ChatScreen({ route }) {
         }
       });
 
+      // Yeni mesaj geldiğinde tetiklenir
       socket.on("receiveMessage", () => {
-        if (isMounted) getMessages();
+        if (isMounted) getMessages(); // Ekranda hala bu sayfa açıksa güncelle
       });
     };
 
     setupSocket();
-
+    // Klavye açıldığında yükseklik ayarı
     const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
       setKeyboardHeight(e.endCoordinates.height);
     });
@@ -87,41 +81,50 @@ export default function ChatScreen({ route }) {
     });
 
     return () => {
-      isMounted = false;
-      socketRef.current?.disconnect();
+      isMounted = false; // Sayfa kapanınca artık state güncelleme
+      socketRef.current?.disconnect();// Socket bağlantısını kes
       showSub.remove();
       hideSub.remove();
     };
   }, []);
 
+  // Mesaj gönderme fonskiyonu
   const sendMessage = async () => {
-    if (!inputText.trim()) return;
+    if (!inputText.trim()) return; // Boş mesaj gönderilmesin
 
     try {
       const token = await AsyncStorage.getItem("token");
-      await commonApi.post(
-        "/send-messages",
-        { receiver_id, message: inputText.trim() },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await commonApi.post("/send-messages", { receiver_id, message: inputText.trim() }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       setInputText("");
       getMessages();
-      socketRef.current?.emit("sendMessage", {}); 
+      socketRef.current?.emit("sendMessage", {}); // Diğer kullanıcıya mesaj geldiğini bildir
     } catch (err) {
       console.error("Mesaj gönderilemedi:", err);
       Alert.alert("Hata", "Mesaj gönderilemedi.");
     }
   };
 
+  // mesaj kutusu
   const renderItem = ({ item }) => {
     const isMe = item.sender_id !== receiver_id;
+
+    // createdAt tarihi (saat ve dakika)
+    const formattedTime = new Date(item.createdAt).toLocaleTimeString("tr-TR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
     return (
       <View
-        className={`rounded-xl px-4 py-2 my-1 max-w-[75%] ${
-          isMe ? "bg-green-400 self-end" : "bg-gray-300 self-start"
-        }`}
+        className={`rounded-xl px-4 py-2 my-1 max-w-[75%] ${isMe ? "bg-green-400 self-end" : "bg-gray-300 self-start"
+          }`}
       >
         <Text>{item.message}</Text>
+         <Text className="text-xs text-right text-gray-700 mt-1">{formattedTime}</Text>
       </View>
     );
   };

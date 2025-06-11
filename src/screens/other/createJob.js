@@ -1,15 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    ScrollView,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    Keyboard,
-} from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -40,6 +30,7 @@ export default function CreateJob() {
         "Sanat", "Medya", "Hukuk", "Danışmanlık", "Diğer"
     ];
 
+    // Bölüm seçme fonksiyonu (checkbox'larla çalışır)
     const handleFieldSelection = (field) => {
         if (selectedFields.includes(field)) {
             setSelectedFields(selectedFields.filter(f => f !== field));
@@ -48,6 +39,7 @@ export default function CreateJob() {
         }
     };
 
+    // Başlangıç tarihi değiştiğinde çağrılan fonksiyon
     const onFromDateChange = (event, selectedDate) => {
         if (event.type === 'dismissed') {
             setShowFromDatePicker(false);
@@ -73,6 +65,7 @@ export default function CreateJob() {
         }
     };
 
+    // Bitiş tarihi değiştiğinde çağrılan fonksiyon
     const onToDateChange = (event, selectedDate) => {
         if (event.type === 'dismissed') {
             setShowToDatePicker(false);
@@ -90,6 +83,7 @@ export default function CreateJob() {
         setToDate(currentDate.toISOString().split('T')[0]);
     };
 
+    // İş ilanı oluşturma fonksiyonu
     const handleCreateJob = async () => {
         if (!jobTitle || !companyName || !location || !fromDate || !toDate || !description || selectedFields.length === 0) {
             Alert.alert('Hata', 'Lütfen tüm alanları doldurun ve en az bir bölüm seçin.');
@@ -145,6 +139,7 @@ export default function CreateJob() {
         }
     };
 
+    // Klavye açıkken ekranın alta kaymasını sağlama
     useEffect(() => {
         const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
             setKeyboardHeight(e.endCoordinates.height);
@@ -159,6 +154,7 @@ export default function CreateJob() {
         };
     }, []);
 
+    // Tarihleri Türkçe olarak formatla
     const displayFromDate = fromDate ? new Date(fromDate).toLocaleDateString('tr-TR') : '';
     const displayToDate = toDate ? new Date(toDate).toLocaleDateString('tr-TR') : '';
 
@@ -279,7 +275,7 @@ export default function CreateJob() {
                     </TouchableOpacity>
                 </ScrollView>
             </View>
-
+            {/* Bölüm seçimi için portal */}
             <Portal>
                 <Dialog visible={showFieldDialog} onDismiss={() => setShowFieldDialog(false)} className="rounded-lg">
                     <Dialog.Title className="text-lg font-bold text-gray-800">Bölüm Seçin</Dialog.Title>

@@ -4,7 +4,6 @@ import Icon from "react-native-vector-icons/Ionicons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import default_image_background from "../../../assets/images/profile_background.jpg"
 import { Button } from "react-native-paper";
-// import { connectSocket, getSocket } from "../../components/socket";
 
 
 export default function UserProfile() {
@@ -12,55 +11,24 @@ export default function UserProfile() {
     const navigation = useNavigation();
     const route = useRoute();
 
+    // bilgilerin geldiği kısım
     useEffect(() => {
         if (route.params?.userInfo) {
             setUserInfo(route.params.userInfo);
-            console.log("geldimmmm", route.params.userInfo.photo);
         }
     }, [route.params]);
 
-
+    // Cv görüntüle fonskiyonu
     const openCvProfile = () => {
         if (userInfo?.resume) {
             Linking.openURL(userInfo.resume);
         }
     };
 
+    //Mesaj gönder fonksiyonu
     const handleSendMessage = async () => {
-        // const socket = getSocket();
-
-        // if (!socket || !socket.connected) {
-        //     console.log("ℹ️ Socket yok veya bağlı değil. Bağlantı kuruluyor...");
-        //     const localToken = await AsyncStorage.getItem("token");
-        //     connectSocket(localToken);
-
-        //     // Socket bağlanması zaman alabileceği için küçük bir gecikme 
-        //     setTimeout(() => {
-        //         const activeSocket = getSocket();
-
-        //         if (activeSocket && activeSocket.connected) {
-        //             activeSocket.emit("joinRoom", {
-        //                 receiver_id: userInfo._id,
-        //             });
-
-        //             navigation.navigate("ChatScreen", { 
-        //                 userInfo:userInfo,
-        //                 room_id: 
-        //              });
-        //         } else {
-        //             console.warn("🚫 Socket yine de bağlanamadı");
-        //         }
-        //     }, 500); // 500ms gecikme
-        // } else {
-        //     socket.emit("joinRoom", {
-        //         receiver_id: userInfo._id,
-        //     });
-
-            navigation.navigate("ChatScreen", { userInfo });
-        // }
+        navigation.navigate("ChatScreen", { userInfo });
     };
-
-
 
     if (!userInfo) {
         return (
@@ -70,7 +38,7 @@ export default function UserProfile() {
         );
     }
 
-    const InfoItem = ({ label, value }) => (
+    const InfoItem = ({value }) => (
         <View className="flex-row justify-between items-center bg-[#b6dcfa] p-3 rounded-xl mb-2">
             <Text className="text-[#0f172a] font-semibold">{value}</Text>
         </View>
@@ -93,8 +61,6 @@ export default function UserProfile() {
                         <Icon name="arrow-back" size={32} color="black" />
                     </TouchableOpacity>
                     <Text className="text-2xl font-bold ml-4">Profil</Text>
-
-
                 </View>
             </View>
 
@@ -114,7 +80,7 @@ export default function UserProfile() {
                         {userInfo.firstName} {userInfo.lastName}
                     </Text>
 
-                    {/* Mesaj Gönder ve CV Görüntüle Butonları Yan Yana */}
+                    {/* Mesaj Gönder ve CV Görüntüle Butonları*/}
                     <View className="flex-row justify-between items-center px-4 mt-5">
                         <Button
                             mode="contained"

@@ -1,13 +1,10 @@
-
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { View, Text, FlatList, ActivityIndicator, Image, TouchableOpacity, Alert, Linking } from 'react-native';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
-import { graduateApi } from '../../connector/URL'; // graduateApi yolunuzu kontrol edin
+import { graduateApi } from '../../connector/URL';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-
 
 export default function InternApplicant() {
     const route = useRoute();
@@ -18,6 +15,8 @@ export default function InternApplicant() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+
+    //fetch
     useFocusEffect(
         useCallback(() => {
             const fetchApplicants = async () => {
@@ -29,18 +28,13 @@ export default function InternApplicant() {
                         setLoading(false);
                         return;
                     }
-
-                    console.log("hey heyyy");
-
+                    // API çağrısı
                     const response = await graduateApi.get(`/get/intern/${intern_id}/applicants`, {
                         headers: {
                             'Authorization': `Bearer ${localToken}`,
                             'Content-Type': 'application/json',
                         },
                     });
-
-                    console.log("bilinmedi");
-                    console.log(response.data.applicants);
                     setApplicants(response.data.applicants);
                 } catch (err) {
                     console.error("Başvuranlar çekilirken hata oluştu:", err);
@@ -59,7 +53,7 @@ export default function InternApplicant() {
 
             fetchApplicants();
 
-            // Temizleme işlemi (gerekiyorsa)
+            // Temizleme işlemi 
             return () => {
                 setApplicants([]);
                 setError(null);
@@ -85,7 +79,6 @@ export default function InternApplicant() {
 
     // Profil Görüntüle fonksiyonu
     const handleViewProfile = (item) => {
-        // userProfile sayfanızın doğru parametreyi beklediğinden emin olun (applicantId veya userInfo)
         navigation.navigate('UserProfile', { userInfo: item.applicant });
     };
 
@@ -146,7 +139,6 @@ export default function InternApplicant() {
     return (
         <View className="flex-1 bg-gray-50">
             {/* Header */}
-            {/* İkonun görünmesi için mt-5 yerine paddingTop ekleyelim, böylece status bar'ın altına gelir */}
             <View className="p-4 flex-row items-center pt-10 bg-white z-10 shadow-sm">
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Icon name="arrow-back" size={30} color="black" />

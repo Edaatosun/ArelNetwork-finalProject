@@ -38,21 +38,12 @@ export default function CreateEvent() {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const availableFields = [
-    'Mühendislik',
-    'Yazılım Geliştirme',
-    'Tasarım',
-    'Pazarlama',
-    'İnsan Kaynakları',
-    'Finans',
-    'Sağlık',
-    'Eğitim',
-    'Sanat',
-    'Medya',
-    'Hukuk',
-    'Danışmanlık',
-    'Diğer',
-  ];
+        "Mühendislik", "Yazılım Geliştirme", "Tasarım", "Pazarlama",
+        "İnsan Kaynakları", "Finans", "Sağlık", "Eğitim",
+        "Sanat", "Medya", "Hukuk", "Danışmanlık", "Diğer"
+    ];
 
+  // Bölüm seçme fonksiyonu (checkbox'larla çalışır)
   const handleFieldSelection = (field) => {
     if (selectedFields.includes(field)) {
       setSelectedFields(selectedFields.filter((f) => f !== field));
@@ -61,6 +52,7 @@ export default function CreateEvent() {
     }
   };
 
+  // Başlangıç tarihi değiştiğinde çağrılan fonksiyon
   const onFromDateChange = (event, selectedDate) => {
     if (event.type === 'dismissed') {
       setShowFromDatePicker(false);
@@ -86,6 +78,7 @@ export default function CreateEvent() {
     }
   };
 
+  // Bitiş tarihi değiştiğinde çağrılan fonksiyon
   const onToDateChange = (event, selectedDate) => {
     if (event.type === 'dismissed') {
       setShowToDatePicker(false);
@@ -104,6 +97,7 @@ export default function CreateEvent() {
     setToDate(currentDate.toISOString().split('T')[0]);
   };
 
+  // Etkinlik ilanı oluşturma fonksiyonu
   const handleCreateEvent = async () => {
     if (
       !eventTitle ||
@@ -158,6 +152,7 @@ export default function CreateEvent() {
     }
   };
 
+  // Klavye açıkken ekranın alta kaymasını sağlama
   useEffect(() => {
     const showListener = Keyboard.addListener('keyboardDidShow', (e) =>
       setKeyboardHeight(e.endCoordinates.height)
@@ -170,6 +165,7 @@ export default function CreateEvent() {
     };
   }, []);
 
+  // Tarih görünümü için 
   const displayFromDate = fromDate ? new Date(fromDate).toLocaleDateString('tr-TR') : '';
   const displayToDate = toDate ? new Date(toDate).toLocaleDateString('tr-TR') : '';
 
@@ -294,7 +290,7 @@ export default function CreateEvent() {
           </TouchableOpacity>
         </ScrollView>
       </View>
-
+      {/* Bölüm seçimi için portal */}
       <Portal>
         <Dialog visible={showFieldDialog} onDismiss={() => setShowFieldDialog(false)}>
           <Dialog.Title className="text-lg font-bold text-gray-800">Bölüm Seçin</Dialog.Title>

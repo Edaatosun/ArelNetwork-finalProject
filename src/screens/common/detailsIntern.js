@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Animated, ScrollView, ActivityIndicator, Alert, Image, Dimensions, Linking, Modal } from 'react-native'; // Linking eklendi
+import { View, Text, TouchableOpacity, Animated, ScrollView, ActivityIndicator, Alert, Image, Linking, Modal } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -22,9 +22,12 @@ export default function DetailsIntern() {
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
     const [isInternOwner, setIsInternOwner] = useState(false);
     const [userType, setUserType] = useState(null);
+    // ilan tarihi geçmiş mi 
     const isExpired = intern?.toDate ? new Date(intern.toDate) < new Date() : false;
+    // ilan başlangıç tarihi başlamış mı?
+    const isUpcoming = intern?.fromDate ? new Date(intern.fromDate) > new Date() : false;
 
-
+    // userType ı alıyoruz sayfa açılır açılmaz
     useEffect(() => {
         const getUserType = async () => {
             const type = await AsyncStorage.getItem('userType');
@@ -33,31 +36,28 @@ export default function DetailsIntern() {
         getUserType();
     }, []);
 
-
+    // userType ve token varsa fetche gidiyor
     useFocusEffect(
         useCallback(() => {
 
+            if (!userType) return;
+            console.log("userType", userType);
+
             const fetchData = async () => {
-                // Always fetch intern details
-                await fetchInternDetails();
-
-                // Get the token once
                 const localToken = await AsyncStorage.getItem("token");
+                if (!localToken) return;
 
-                // Conditionally run checkIsOwner based on 'type'
+                await fetchInternDetails(localToken);
+
                 if (userType !== "student") {
                     await checkIsOwner(localToken);
                 } else {
-                    console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaelse");
                     setIsInternOwner(false);
                 }
 
-                console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-
-
                 await checkIfApplied(localToken);
             };
-
+            //fetchlerr
             const fetchInternDetails = async () => {
                 try {
                     setLoading(true);
@@ -72,7 +72,6 @@ export default function DetailsIntern() {
 
                     const internData = response.data.intern;
                     setIntern(internData);
-                    console.log("İlan Verisi:", internData);
                 } catch (error) {
                     console.error("İlan verisi alınamadı:", error);
                     setIntern(null);
@@ -99,10 +98,8 @@ export default function DetailsIntern() {
                     if (response.status === 200) {
                         const isOwner = response.data.isOwner;
                         setIsInternOwner(isOwner);
-                        console.log("İlan sahibi:", isOwner);
                     } else {
                         setIsJobOwner(false);
-                        console.log("İlan sahibi değil: false");
                     }
                 } catch (error) {
                     console.error("İlan sahibi kontrolü sırasında hata:", error);
@@ -119,7 +116,6 @@ export default function DetailsIntern() {
                         setResumeData(null); // Token yoksa CV verisi de yoktur
                         return;
                     }
-                    console.log("hdagsfhjg");
                     const response = await commonApi.get(`/check/myIntern/${item_id}`, {
                         headers: {
                             'Authorization': `Bearer ${localToken}`,
@@ -145,7 +141,6 @@ export default function DetailsIntern() {
                     if (error.response && error.response.status === 404) {
                         setIsApplied(false);
                         setResumeData(null);
-                        console.log("Başvuru bulunamadı (404).");
                     } else {
                         setIsApplied(false);
                         setResumeData(null);
@@ -165,6 +160,7 @@ export default function DetailsIntern() {
         }, [item_id, userType])
     );
 
+    // animasyon için 
     useEffect(() => {
         Animated.timing(fadeAnim, {
             toValue: 1,
@@ -173,6 +169,7 @@ export default function DetailsIntern() {
         }).start();
     }, [fadeAnim]);
 
+    //CV gönder fonksiyonu
     const handleApply = async () => {
         if (isApplied) {
             // Eğer isApplied true ise, CV'yi gösterme işlevini çalıştır
@@ -195,7 +192,7 @@ export default function DetailsIntern() {
         }
 
         // isApplied false ise, başvuru yapma işlevini çalıştır
-        setLoading(true); // Yükleme durumunu başlat
+        setLoading(true);
 
         try {
             const localToken = await AsyncStorage.getItem("token");
@@ -212,7 +209,7 @@ export default function DetailsIntern() {
 
             if (result.canceled) {
                 Alert.alert("Bilgi", "CV seçimi iptal edildi.");
-                setLoading(false); // Yükleme durumunu kapat
+                setLoading(false);
                 return;
             }
 
@@ -226,8 +223,6 @@ export default function DetailsIntern() {
                 name: name,
                 type: mimeType || 'application/pdf', // mimeType bulunamazsa varsayılan
             });
-
-            console.log("Gönderilen FormData:", formData); // Debug için
 
             const response = await commonApi.post(`/apply/internship`, formData, {
                 headers: {
@@ -254,10 +249,14 @@ export default function DetailsIntern() {
                 Alert.alert("Hata", 'Beklenmeyen bir hata oluştu.');
             }
         } finally {
-            setLoading(false); // Yükleme durumunu kapat
+            setLoading(false);
         }
     };
 
+    // renderRichText: Metni parçalayıp, düzenli şekilde <Text> bileşenleri olarak ekrana basar
+    // Parametreler:
+    // - text: Gösterilecek metin
+    // - type: Liste mi yoksa paragraf mı olduğunu belirtir
     const renderRichText = (text, type = 'paragraph') => {
         if (!text) return null;
         const paragraphs = text.split('\n').filter(p => p.trim() !== '');
@@ -290,15 +289,13 @@ export default function DetailsIntern() {
         );
     }
 
-
+    //edit  moddaki silme işlemi
     const handleDelete = async () => {
         try {
             setLoading(true);
-            console.log("heyyyy");
             setDeleteModalVisible(false);
+
             const localToken = await AsyncStorage.getItem("token");
-            console.log()
-            console.log(intern._id);
             const response = await graduateApi.delete(`/intern/${intern._id}`, {
                 headers: {
                     'Authorization': `Bearer ${localToken}`,
@@ -360,7 +357,7 @@ export default function DetailsIntern() {
                     {/* Ayırıcı Çizgi */}
                     <View className="border-b border-gray-300 mx-4 my-4" />
 
-                    {/* Temel Bilgiler (Tek Sütun) */}
+                    {/* Temel Bilgiler */}
                     <View className="p-4">
                         <Text className="text-2xl font-bold mb-4 text-black ">{intern.internTitle}</Text>
 
@@ -391,7 +388,7 @@ export default function DetailsIntern() {
                         )}
                     </View>
 
-                    {/* Açıklama ve Diğer Detaylar */}
+                    {/* Açıklama */}
                     <View className="px-4">
                         {intern.description && (
                             <View className="mb-4">
@@ -399,7 +396,6 @@ export default function DetailsIntern() {
                                 {renderRichText(intern.description, 'paragraph')}
                             </View>
                         )}
-                        {/* Diğer detaylar, capabilities, requiredDocuments vb. buraya eklenebilir */}
                     </View>
                 </ScrollView>
             </Animated.View>
@@ -409,6 +405,10 @@ export default function DetailsIntern() {
                     {isExpired ? (
                         <View className="bg-gray-400 p-4 rounded-lg items-center justify-center">
                             <Text className="text-white font-bold text-lg">İlan süresi dolmuştur</Text>
+                        </View>
+                    ) : isUpcoming ? (
+                        <View className="bg-yellow-500 p-4 rounded-lg items-center justify-center">
+                            <Text className="text-white font-bold text-lg">İlan henüz açılmamıştır</Text>
                         </View>
                     ) : (
                         <TouchableOpacity

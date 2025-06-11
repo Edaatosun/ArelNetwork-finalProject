@@ -15,56 +15,58 @@ export default function Login() {
     const navigation = useNavigation();
     const [modalVisible, setModalVisible] = useState(false);
     const [tcNo, setTcNo] = useState('');
+    const [email, setEmail] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
 
-    let [fontsLoaded] = useFonts({
-        'myFont': require('../../../assets/fonts/BebasNeue-Regular.ttf'),
+    // Özel fontu (BebasNeue-Regular.ttf) uygulamaya yükler
+    //  fontsLoaded değişkeniyle yüklenip yüklenmediğini takip eder
+    const [fontsLoaded] = useFonts({
+        myFont: require('../../../assets/fonts/BebasNeue-Regular.ttf'),
     });
 
+    // şifremi unuttum fonksiyonu 
     const handleForgotSubmit = async () => {
-        if (!tcNo) {
-            Alert.alert('Uyarı', 'Lütfen TC Kimlik Numaranızı giriniz.');
+
+        if (!tcNo || !email) {
+            Alert.alert('Uyarı', 'Lütfen TC Kimlik Numaranızı ve e-posta adresinizi giriniz.');
             return;
         }
 
-        setModalVisible(true);
         try {
-            console.log('Forgot password request for TC:', tcNo);
-            const response = await graduateApi.post('/forgotPassword', {
+            const response = await commonApi.post('/user/send/email', {
                 tc: tcNo,
+                eMail: email,
             });
-            console.log('Forgot password response:', response.data);
 
-            if (response.status === 200) {
+            if (response.status === 200 && response.data.exist) {
                 setModalVisible(false);
-                Alert.alert('Başarılı', `Merhaba ${response.data.user.firstName}\nŞifren: ${response.data.user.password}`);
+                Alert.alert('Başarılı', "Şifreniz e-posta adresinize gönderildi. Lütfen e-postanızı kontrol ediniz.");
             } else {
-                Alert.alert('Hata', response.data.msg || 'Bilgi getirilemedi.');
+                Alert.alert('Hata', response.data.message || 'Kullanıcı bulunamadı.');
             }
         } catch (error) {
-            console.error('Forgot password error:', error.message);
-            Alert.alert('Hata', error.response?.data?.msg || 'Bir hata oluştu.');
+            console.error('Şifre gönderme hatası:', error.message);
+            Alert.alert('Hata', error.response?.data?.message || 'Bir hata oluştu.');
         } finally {
             setModalVisible(false);
         }
     };
 
+    // Giriş yap fonksiyonu
     const handleLogin = async () => {
         if (!tc || !password) {
             Alert.alert('Uyarı', 'Lütfen okul numarası ve şifrenizi giriniz.');
             return;
         }
-
+        // fetch kaynaklı loading yapıyorum.
         setLoading(true);
 
         try {
-            console.log('Login request:', { tc: parseInt(tc), password });
             const response = await graduateApi.post('/login', {
                 tc: parseInt(tc),
                 password: password,
             });
             const data = response.data;
-            console.log('Login response:', data);
 
             if (response.status === 200 && data.token) {
                 await AsyncStorage.setItem('token', data.token);
@@ -92,13 +94,13 @@ export default function Login() {
             Alert.alert('Hata', userFriendlyMessage);
         } finally {
             setLoading(false);
-            
+
         }
     };
 
     return (
         <View className="flex-1 relative">
-            {/* Giriş Yap Butonu */}
+            {/* Yönlendirme  Butonu */}
             <View className="absolute top-10 right-4 z-10">
                 <TouchableOpacity
                     className="flex-row items-center"
@@ -175,6 +177,10 @@ export default function Login() {
                     >
                         <Text className="text-white text-center text-lg font-bold">Giriş Yap</Text>
                     </TouchableOpacity>
+
+                    {loading && (
+                        <ActivityIndicator size="large" color="#4CAF50" className="mt-4" />
+                    )}
                 </View>
             </KeyboardAwareScrollView>
 
@@ -188,7 +194,7 @@ export default function Login() {
                 <View className="flex-1 justify-center items-center bg-black bg-opacity-50">
                     <View className="bg-white rounded-xl p-6 w-11/12 max-w-md">
                         <Text className="text-lg font-semibold text-center mb-4">
-                            TC Kimlik Numaranızı Girin
+                            Bilgilerinizi Giriniz
                         </Text>
 
                         <TextInput
@@ -198,6 +204,19 @@ export default function Login() {
                             mode="outlined"
                             keyboardType="numeric"
                             maxLength={11}
+                            activeOutlineColor="#4CAF50"
+                            outlineColor="#ccc"
+                            theme={{ colors: { primary: '#4CAF50' } }}
+                        />
+
+                        <TextInput
+                            label="E-posta Adresi"
+                            value={email}
+                            onChangeText={setEmail}
+                            mode="outlined"
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            className="mt-3"
                             activeOutlineColor="#4CAF50"
                             outlineColor="#ccc"
                             theme={{ colors: { primary: '#4CAF50' } }}

@@ -1,13 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  Image,
-  TouchableOpacity,
-  RefreshControl,
-  Alert,
-} from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
+import { View, Text, FlatList, Image, TouchableOpacity, RefreshControl, Alert } from 'react-native';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -20,10 +12,13 @@ import { graduateApi } from '../../connector/URL';
 export default function MyJob() {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
+
+  // İş ilanları, arama metni ve yenileme durumu için state'ler
   const [myJobs, setMyJobs] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
+  // Tarih formatını ayarlayan fonksiyon  (örn: 01.06.2025)
   const formatDate = (dateString) => {
     if (!dateString) return 'Tarih Yok';
     try {
@@ -35,11 +30,13 @@ export default function MyJob() {
     }
   };
 
+  // Uzun açıklamaları kısaltır (maksimum karakter sayısı kadar)
   const truncateDescription = (text, maxLength) => {
     if (!text) return '';
     return text.length <= maxLength ? text : text.substring(0, maxLength) + '...';
   };
 
+  // kullanıcının oluşturduğu ilanları çeken fonksiyon
   const fetchMyJobs = useCallback(async () => {
     setRefreshing(true);
     try {
@@ -71,6 +68,7 @@ export default function MyJob() {
     }
   }, []);
 
+  // Kullanıcının iş ilanları arasında arama yapan fonksiyon
   const searchMyJobs = useCallback(async (query) => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -93,18 +91,20 @@ export default function MyJob() {
         Alert.alert('Hata', 'Arama sonuçları getirilemedi.');
       }
     } catch (error) {
-      console.log('Arama hatası:', error);
+
       setMyJobs([]);
       Alert.alert('Hata', 'Arama sırasında bir hata oluştu.');
     }
   }, []);
 
+  // Sayfa her odaklandığında iş ilanlarını yeniden getir
   useEffect(() => {
     if (isFocused) {
       fetchMyJobs();
     }
   }, [isFocused, fetchMyJobs]);
 
+  // Arama çubuğu yazısı değiştikçe arama yap ya da tüm ilanları getir
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       if (searchQuery.trim()) {
@@ -117,10 +117,27 @@ export default function MyJob() {
     return () => clearTimeout(delayDebounce);
   }, [searchQuery, searchMyJobs, fetchMyJobs]);
 
-  const renderJobCard = ({ item: job }) => {
-    const now = new Date();
-    const jobEndDate = job.toDate ? new Date(job.toDate) : null;
 
+  // İş ilanı kartı
+  const renderJobCard = ({ item: job }) => {
+    // aktif pasif yakında başlıkları
+    const now = new Date();
+    const fromDateRaw = job.fromDate ? new Date(job.fromDate) : null;
+    const toDateRaw = job.toDate ? new Date(job.toDate) : null;
+
+    let statusLabel = 'Aktif';
+    let statusColor = 'bg-green-500';
+
+    if (toDateRaw && toDateRaw < now) {
+      statusLabel = 'Pasif';
+      statusColor = 'bg-red-500';
+    }
+    else if (fromDateRaw && fromDateRaw > now) {
+      statusLabel = 'Yakında';
+      statusColor = 'bg-yellow-500';
+    }
+
+    // detay ekranına yönlendirme fonksiyonu
     const goToJobDetail = () => {
       navigation.navigate('DetailsJob',
         {
@@ -137,39 +154,50 @@ export default function MyJob() {
             className="w-full h-44 rounded-t-lg"
             resizeMode="cover"
           />
+          {/* Durum etiketi */}
+          <View className={`absolute top-3 right-3 px-3 py-1 rounded-full ${statusColor}`}>
+            <Text className="text-white text-xs font-semibold">{statusLabel}</Text>
+          </View>
         </View>
+
         <View className="p-4">
           <PaperText variant="titleLarge" className="text-xl font-bold mb-1">
             {job.jobTitle}
           </PaperText>
+
           <PaperText variant="bodyMedium" className="text-gray-700 text-sm mb-2">
             {truncateDescription(job.description, 20)}
           </PaperText>
+
           <View className="flex-row items-center mb-1">
             <FontAwesome5 name="home" size={16} color="#4B5563" />
             <Text className="ml-2 text-gray-600 text-sm">{job.company}</Text>
           </View>
+
           <View className="flex-row items-center mb-1">
             <Icon name="location-sharp" size={16} color="#4B5563" />
             <Text className="ml-2 text-gray-600 text-sm">{job.location}</Text>
           </View>
+
           <View className="flex-row items-center mb-1">
             <Icon name="calendar" size={16} color="#4B5563" />
             <Text className="ml-2 text-gray-600 text-sm">
               {formatDate(job.fromDate)} - {formatDate(job.toDate)}
             </Text>
           </View>
+
           <View className="flex-row items-center">
             <FontAwesome5 name="award" size={16} color="#4B5563" />
             <Text className="ml-2 text-gray-600 text-sm">{job.jobField}</Text>
           </View>
         </View>
+
         <View className="flex-row justify-center px-4 pb-3">
           {/* Başvurular Butonu */}
           <Button
             mode="contained"
-            onPress={() => navigation.navigate("JobApplicant", { job_id: job._id })} 
-            className="bg-blue-600 rounded-md flex-1 mr-2" 
+            onPress={() => navigation.navigate("JobApplicant", { job_id: job._id })}
+            className="bg-blue-600 rounded-md flex-1 mr-2"
             labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
           >
             Başvurular
@@ -179,7 +207,7 @@ export default function MyJob() {
           <Button
             mode="contained"
             onPress={goToJobDetail}
-            className="bg-green-600 rounded-md flex-1 ml-2" 
+            className="bg-green-600 rounded-md flex-1 ml-2"
             labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
           >
             İlana Git
@@ -201,6 +229,7 @@ export default function MyJob() {
         <Appbar.Content title="İş İlanlarım" titleStyle={{ color: 'white' }} />
       </Appbar.Header>
 
+      {/* Arama kutusu */}
       <Searchbar
         placeholder="Ara..."
         onChangeText={setSearchQuery}

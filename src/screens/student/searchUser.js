@@ -1,24 +1,26 @@
-import React, { useEffect, useState } from 'react';
-import { View, FlatList, Alert, Image, TouchableOpacity } from 'react-native';
-import { Searchbar, Card, Text, Avatar, Appbar, TouchableRipple } from 'react-native-paper';
-import api, { studentApi } from '../../connector/URL';
+import { useEffect, useState } from 'react';
+import { View, FlatList, Alert, Image } from 'react-native';
+import { Searchbar, Card, Text, Appbar, TouchableRipple } from 'react-native-paper';
+import { studentApi } from '../../connector/URL';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 
 export default function SearchUser() {
-    const [students, setStudents] = useState([]);
+    const [users, setUsers] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const navigation = useNavigation();
 
+    // Arama metni değiştiğinde çalışan useEffect
     useEffect(() => {
         if (searchQuery.length >= 1) {
-            fetchStudents(searchQuery);
+            fetchUsers(searchQuery);
         } else {
-            setStudents([]);
+            setUsers([]);
         }
     }, [searchQuery]);
 
-    const fetchStudents = async (query) => {
+    // fetch
+    const fetchUsers = async (query) => {
         try {
             const localToken = await AsyncStorage.getItem('token');
 
@@ -33,7 +35,7 @@ export default function SearchUser() {
             });
 
             if (response.status === 200) {
-                setStudents(response.data.users);
+                setUsers(response.data.users);
             }
         } catch (error) {
             console.error(error);
@@ -41,12 +43,13 @@ export default function SearchUser() {
         }
     };
 
+    // Kullanıcıya tıklanınca profiline git
     const handleUserPress = (user) => {
         navigation.navigate('UserProfile', { userInfo: user });
     };
 
 
-
+    // Kullanıcı kartları
     const renderStudentCard = ({ item }) => {
         const hasPhoto = item.photo && item.photo.trim() !== '';
         const fullName = `${item.firstName} ${item.lastName}`;
@@ -99,6 +102,7 @@ export default function SearchUser() {
 
     return (
         <View className="flex-1 bg-gray-100">
+            {/* Uygulama başlığı ve menü */}
             <Appbar.Header>
                 <Appbar.Action icon="menu" size={32} onPress={() => navigation.openDrawer?.()} />
                 <Appbar.Content title="Kişi Ara" />
@@ -112,8 +116,9 @@ export default function SearchUser() {
                     className="mb-4 bg-white rounded-xl shadow-sm"
                 />
 
+                {/* kişileri listele */}
                 <FlatList
-                    data={students}
+                    data={users}
                     renderItem={renderStudentCard}
                     keyExtractor={(item) => item._id.toString()}
                     ListEmptyComponent={

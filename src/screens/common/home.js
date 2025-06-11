@@ -7,47 +7,56 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from '@react-navigation/native';
 import { commonApi } from '../../connector/URL';
 import DropDownPicker from 'react-native-dropdown-picker';
+import { ActivityIndicator } from 'react-native-paper';
 
 export default function Home() {
     const navigation = useNavigation();
+    const [loading, setLoading] = useState(false);
+
     const [searchQuery, setSearchQuery] = useState('');
 
+    //Hangi sekmenin seçili olduğunu tutar
     const [selectedTab, setSelectedTab] = useState('İş İlanları');
-    const [showFilterModal, setShowFilterModal] = useState(false); // Renamed for clarity
+    const [showFilterModal, setShowFilterModal] = useState(false);
 
     const [activities, setActivities] = useState([]);
     const [jobData, setJobData] = useState([]);
     const [internshipData, setInternshipData] = useState([]);
 
+    //Filtre için seçilen veriler
     const [selectedLocation, setSelectedLocation] = useState(null);
     const [selectedCompany, setSelectedCompany] = useState(null);
-    const [selectedDepartment, setSelectedDepartment] = useState(null); // Changed initial state to null
+    const [selectedDepartment, setSelectedDepartment] = useState(null);
 
+    // DropDownPicker bileşenlerinin açık/kapalı kontrolü
     const [locationOpen, setLocationOpen] = useState(false);
     const [companyOpen, setCompanyOpen] = useState(false);
     const [departmentOpen, setDepartmentOpen] = useState(false);
 
-     useFocusEffect(
+    //Geri butonu için 
+    useFocusEffect(
         useCallback(() => {
             const onBackPress = () => {
-                return true; // geri tuşunu engelle
+                return true; // Geri butonu engelle
             };
 
             const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
 
-            return () => subscription.remove(); 
+            return () => subscription.remove();
         }, [])
     );
 
-    // Filter data for DropDownPickers
+    //DropDownPicker için filter datalar
     const uniqueDepartments = useMemo(() => {
         const departments = [
-            "Tümü", // Add "Tümü" option for departments
+            "Tümü",
             "Bilgisayar Mühendisliği",
             "Elektrik-Elektronik Mühendisliği",
             "Makine Mühendisliği",
             "Endüstri Mühendisliği",
-            "İnşaat Mühendisliği"
+            "İnşaat Mühendisliği",
+            "Grafik Tasarım",
+            "Finans/Ekonomi"
 
         ];
         return departments.map(department => ({
@@ -58,14 +67,46 @@ export default function Home() {
     }, []);
 
     const uniqueLocations = useMemo(() => {
-        const combined = [...jobData, ...internshipData, ...activities];
-        const locations = Array.from(new Set(combined.map(item => item.location).filter(Boolean)));
-        return [{ key: "Tümü", label: "Tümü", value: null }, ...locations.map(location => ({
-            key: location,
-            label: location,
-            value: location,
-        }))];
-    }, [jobData, internshipData, activities]);
+        const cities = [
+            "Tümü",
+            "İstanbul",
+            "Ankara",
+            "İzmir",
+            "Bursa",
+            "Antalya",
+            "Konya",
+            "Adana",
+            "Gaziantep",
+            "Mersin",
+            "Kayseri",
+            "Eskişehir",
+            "Samsun",
+            "Trabzon",
+            "Denizli",
+            "Manisa",
+            "Sakarya",
+            "Kocaeli",
+            "Malatya",
+            "Erzurum",
+            "Aydın",
+            "Balıkesir",
+            "Çanakkale",
+            "Şanlıurfa",
+            "Elazığ",
+            "Van",
+            "Afyonkarahisar",
+            "Kütahya",
+            "Zonguldak",
+            "Tekirdağ"
+        ];
+
+        return cities.map(city => ({
+            key: city,
+            label: city,
+            value: city === "Tümü" ? null : city
+        }));
+    }, []);
+
 
     const uniqueCompanies = useMemo(() => {
         const combined = [...jobData, ...internshipData, ...activities];
@@ -73,11 +114,9 @@ export default function Home() {
         return [{ key: "Tümü", label: "Tümü", value: null }, ...companies.map(company => ({ key: company, label: company, value: company }))];
     }, [jobData, internshipData, activities]);
 
-
-
-
-    // Fetch functions
+    // Fetch fonksiyonları
     const fetchActivities = async () => {
+        setLoading(true);
         try {
             const localToken = await AsyncStorage.getItem("token");
             const response = await commonApi.get('/get/all_event', {
@@ -96,10 +135,13 @@ export default function Home() {
         } catch (error) {
             console.log("Etkinlikler alınırken hata oluştu:", error.response || error);
             setActivities([]);
+        } finally {
+            setLoading(false);
         }
     };
 
     const fetchJobData = async () => {
+        setLoading(true);
         try {
             const localToken = await AsyncStorage.getItem("token");
             const response = await commonApi.get('/get/all_job', {
@@ -120,9 +162,13 @@ export default function Home() {
                 navigation.navigate("MainScreen");
             }
         }
+        finally {
+            setLoading(false);
+        }
     };
 
     const fetchInternshipData = async () => {
+        setLoading(true);
         try {
             const localToken = await AsyncStorage.getItem("token");
             const response = await commonApi.get('/get/all_intern', {
@@ -134,6 +180,9 @@ export default function Home() {
             setInternshipData(response.data.interns);
         } catch (error) {
             console.error("Staj ilanları alınırken hata oluştu:", error.response || error);
+        }
+        finally {
+            setLoading(false);
         }
     };
 
@@ -209,7 +258,10 @@ export default function Home() {
         }
     };
 
-    // Determine which data to display based on the selected tab
+
+
+
+    // Seçilen sekmeye göre hangi veriler gösterilecek onu belirler
     const selectedData = useMemo(() => {
         if (selectedTab === 'İş İlanları') {
             return jobData;
@@ -221,7 +273,7 @@ export default function Home() {
         return [];
     }, [selectedTab, jobData, internshipData, activities]);
 
-    // Apply filters and search query
+    // Filtreleri ve arama sorgusunu uygulamak için
     const filteredData = useMemo(() => {
         return selectedData.filter(item => {
             let titleToCheck = '';
@@ -266,7 +318,7 @@ export default function Home() {
         });
     }, [selectedData, searchQuery, selectedDepartment, selectedLocation, selectedCompany, selectedTab]);
 
-    // Function to fetch all data based on the current tab (for "İptal" button)
+    // Filtre iptal butonu
     const fetchAllDataBasedOnTab = useCallback(() => {
         if (selectedTab === 'İş İlanları') {
             fetchJobData();
@@ -277,7 +329,7 @@ export default function Home() {
         }
     }, [selectedTab]);
 
-    // Function to apply filters from the modal
+    // Filtre uygula butonuna basıldığında tetiklenir
     const applyFilters = useCallback(() => {
         if (selectedTab === 'İş İlanları') {
             fetchFilteredJobData();
@@ -289,14 +341,12 @@ export default function Home() {
     }, [selectedTab, selectedDepartment, selectedLocation, selectedCompany, searchQuery]);
 
 
-    // Sekme değiştiğinde veya filtreler değiştiğinde ilgili veriyi fetch et
+    // Sayfa her odaklandığında veri çek
     useFocusEffect(
         useCallback(() => {
-            // If filters are applied, fetch filtered data
             if (selectedDepartment || selectedLocation || selectedCompany || searchQuery.trim()) {
                 applyFilters();
             } else {
-                // Otherwise, fetch all data for the selected tab
                 fetchAllDataBasedOnTab();
             }
         }, [selectedTab])
@@ -316,7 +366,7 @@ export default function Home() {
         let targetScreen = '';
         let endDateRaw = null;
 
-        // 📌 Türlere göre alanları doldur
+        // Türlere göre alanlar
         if (isActivity) {
             title = item.eventTitle;
             company = item.company;
@@ -346,17 +396,29 @@ export default function Home() {
             targetScreen = 'DetailsIntern';
         }
 
-        // 📌 Tarihe göre aktiflik/pasiflik kontrolü
-        const isExpired = endDateRaw ? endDateRaw < new Date() : false;
-        const statusLabel = isExpired ? 'Pasif' : 'Aktif';
-        const statusColor = isExpired ? 'bg-red-500' : 'bg-green-500';
+        // aktif pasif yakında başlıkları
+        const now = new Date();
+        const isExpired = endDateRaw ? endDateRaw < now : false;
+        const isUpcoming = item.fromDate ? new Date(item.fromDate) > now : false;
+
+        let statusLabel = 'Aktif';
+        let statusColor = 'bg-green-500';
+
+        if (isExpired) {
+            statusLabel = 'Pasif';
+            statusColor = 'bg-red-500';
+        } else if (isUpcoming) {
+            statusLabel = 'Yakında';
+            statusColor = 'bg-yellow-500';
+        }
+
 
         return (
             <TouchableOpacity
                 className="mb-4 border border-gray-200 rounded-lg"
                 onPress={() => navigation.navigate(targetScreen, { item_id: item._id })}
             >
-                {/* 🔹 Üst Satır - Şirket Adı + Aktif/Pasif Etiketi */}
+                {/* Üst Satır - Şirket Adı + Aktif/Pasif Etiketi */}
                 <View className="flex-row items-center justify-between p-2 bg-gray-100">
                     <Text
                         className="font-bold text-lg text-black flex-1 mr-2"
@@ -370,7 +432,7 @@ export default function Home() {
                     </View>
                 </View>
 
-                {/* 🔹 Kart İçeriği */}
+                {/* Kart İçeriği */}
                 <View className="bg-white p-4 rounded-b-xl">
                     {/* Başlık */}
                     <View className="items-start mb-1">
@@ -462,7 +524,7 @@ export default function Home() {
                                     <View className="bg-white rounded-xl w-11/12  h-[450px] p-5 items-center ">
                                         <Text className="text-xl font-bold mb-10 mt-10 text-center">Filtrele</Text>
 
-                                        {/* Dropdowns for filters */}
+                                        {/* filtreler için Dropdownlar */}
                                         <DropDownPicker
                                             open={locationOpen}
                                             maxHeight={120}
@@ -530,7 +592,7 @@ export default function Home() {
                                             }}
                                         />
 
-                                        {/* Buttons */}
+                                        {/* İptal butonu */}
                                         <View className="flex-row justify-between mt-4 w-full">
                                             <TouchableOpacity
                                                 onPress={() => {
@@ -556,25 +618,31 @@ export default function Home() {
                 )}
 
             </View>
-
-            <FlatList
-                showsVerticalScrollIndicator={false}
-                data={filteredData || []}
-                renderItem={renderCard}
-                keyExtractor={(item) => item._id}
-                extraData={selectedTab}
-                ListEmptyComponent={
-                    <View className="mt-10 items-center">
-                        <Text className="text-gray-500 text-lg font-semibold">
-                            {
-                                selectedTab === 'İş İlanları' ? 'Herhangi bir iş ilanı bulunmamaktadır.' :
-                                    selectedTab === 'Staj İlanları' ? 'Herhangi bir staj ilanı bulunmamaktadır.' :
-                                        'Herhangi bir etkinlik bulunmamaktadır.'
-                            }
-                        </Text>
-                    </View>
-                }
-            />
+            {loading ? (
+                <View className="flex-1 justify-center items-center">
+                    <ActivityIndicator size="large" color="#0000ff" />
+                </View>
+            ) : (
+                <FlatList
+                    showsVerticalScrollIndicator={false}
+                    data={filteredData || []}
+                    renderItem={renderCard}
+                    keyExtractor={(item) => item._id}
+                    extraData={selectedTab}
+                    ListEmptyComponent={
+                        <View className="mt-10 items-center">
+                            <Text className="text-gray-500 text-lg font-semibold">
+                                {
+                                    selectedTab === 'İş İlanları' ? 'Herhangi bir iş ilanı bulunmamaktadır.' :
+                                        selectedTab === 'Staj İlanları' ? 'Herhangi bir staj ilanı bulunmamaktadır.' :
+                                            'Herhangi bir etkinlik bulunmamaktadır.'
+                                }
+                            </Text>
+                        </View>
+                    }
+                />
+            )}
         </View>
+
     );
 }

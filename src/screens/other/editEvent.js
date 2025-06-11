@@ -1,16 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    ScrollView,
-    Alert,
-    Keyboard,
-    Platform,
-    KeyboardAvoidingView,
-    ActivityIndicator
-} from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Keyboard, Platform, KeyboardAvoidingView, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -23,20 +12,25 @@ export default function EditEvent() {
     const route = useRoute();
     const { item_id } = route.params;
 
+    // Form alanları için 
     const [eventTitle, setEventTitle] = useState('');
     const [companyName, setCompanyName] = useState('');
     const [location, setLocation] = useState('');
     const [fromDate, setFromDate] = useState('');
     const [toDate, setToDate] = useState('');
     const [description, setDescription] = useState('');
+
+    // Tarih seçici ve klavye için 
     const [showFromDatePicker, setShowFromDatePicker] = useState(false);
     const [showToDatePicker, setShowToDatePicker] = useState(false);
     const [selectedFromDateObj, setSelectedFromDateObj] = useState(null);
     const [selectedToDateObj, setSelectedToDateObj] = useState(null);
-    const [selectedFields, setSelectedFields] = useState([]);
-    const [showFieldDialog, setShowFieldDialog] = useState(false);
     const [keyboardHeight, setKeyboardHeight] = useState(0);
     const [loading, setLoading] = useState(false);
+
+    // Bölüm seçimi için
+    const [selectedFields, setSelectedFields] = useState([]);
+    const [showFieldDialog, setShowFieldDialog] = useState(false);
 
     const availableFields = [
         "Mühendislik", "Yazılım Geliştirme", "Tasarım", "Pazarlama",
@@ -44,6 +38,7 @@ export default function EditEvent() {
         "Sanat", "Medya", "Hukuk", "Danışmanlık", "Diğer"
     ];
 
+    // Bölüm seçimini kontrol eder (varsa çıkarır, yoksa ekler)
     const handleFieldSelection = (field) => {
         if (selectedFields.includes(field)) {
             setSelectedFields(selectedFields.filter(f => f !== field));
@@ -52,6 +47,7 @@ export default function EditEvent() {
         }
     };
 
+    // Başlangıç tarihi seçimi
     const onFromDateChange = (event, selectedDate) => {
         if (event.type === 'dismissed') {
             setShowFromDatePicker(false);
@@ -77,6 +73,7 @@ export default function EditEvent() {
         }
     };
 
+    // Bitiş tarihi seçimi
     const onToDateChange = (event, selectedDate) => {
         if (event.type === 'dismissed') {
             setShowToDatePicker(false);
@@ -95,6 +92,7 @@ export default function EditEvent() {
         setToDate(currentDate.toISOString().split('T')[0]);
     };
 
+    // etkinlik detaylarını getirir
     const fetchEventDetails = async () => {
         try {
             setLoading(true);
@@ -154,6 +152,7 @@ export default function EditEvent() {
         };
     }, [item_id]);
 
+    // Güncelle fonksiyonu
     const handleEditEvent = async () => {
         if (!eventTitle || !companyName || !location || !fromDate || !toDate || !description || selectedFields.length === 0) {
             Alert.alert('Hata', 'Lütfen tüm alanları doldurun ve en az bir bölüm seçin.');
@@ -203,6 +202,7 @@ export default function EditEvent() {
         }
     };
 
+    // Tarihlerin ekranda gösterilecek hali 
     const displayFromDate = fromDate ? new Date(fromDate).toLocaleDateString('tr-TR') : '';
     const displayToDate = toDate ? new Date(toDate).toLocaleDateString('tr-TR') : '';
 
@@ -218,6 +218,7 @@ export default function EditEvent() {
                         <ActivityIndicator size="large" color="#0000ff" />
                     </View>
                 )}
+                {/* Header */}
                 <View className="p-4 flex-row items-center mt-5 bg-gray-100 z-10">
                     <TouchableOpacity onPress={() => navigation.goBack()}>
                         <Icon name="arrow-back" size={30} color="black" />
@@ -225,6 +226,7 @@ export default function EditEvent() {
                     <Text className="text-xl font-bold ml-4">Etkinlik İlanı Güncelle</Text>
 
                 </View>
+                {/* Form alanları */}
                 <ScrollView
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{
@@ -328,7 +330,7 @@ export default function EditEvent() {
                         multiline
                         textAlignVertical="top"
                     />
-
+                    {/* Güncelle Butonu */}
                     <TouchableOpacity
                         onPress={handleEditEvent}
                         className="bg-green-600 p-4 rounded-lg mt-4 mb-10 items-center shadow-md active:bg-green-700"
@@ -336,7 +338,7 @@ export default function EditEvent() {
                         <Text className="text-white text-lg font-bold">Güncelle</Text>
                     </TouchableOpacity>
                 </ScrollView>
-
+                {/* Bölüm seçimi modalı */}
                 <Portal>
                     <Dialog visible={showFieldDialog} onDismiss={() => setShowFieldDialog(false)}>
                         <Dialog.Title className="text-lg font-bold text-gray-800">Bölüm Seçin</Dialog.Title>

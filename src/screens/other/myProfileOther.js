@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Text, View, Image, TouchableOpacity, Button, Linking, Alert, ScrollView } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -14,6 +14,7 @@ export default function ProfileOther() {
     const [cvUrl, setCvUrl] = useState(null);
     const navigation = useNavigation();
 
+    // Kullanıcının bilgileri için fetch
     const fetchUserInfo = async () => {
         try {
             const token = await AsyncStorage.getItem("token");
@@ -26,7 +27,11 @@ export default function ProfileOther() {
 
             if (response.data && response.data.info) {
                 setUserInfo(response.data.info);
-                setPhoto(response.data.info.photo);
+                // Önbelleği kırmak için zaman ekliyoruz
+                const photoUrl = response.data.info.photo
+                    ? `${response.data.info.photo}?t=${Date.now()}`
+                    : null;
+                setPhoto(photoUrl);
                 setCvUrl(response.data.info.resume);
             }
         } catch (error) {
@@ -34,10 +39,12 @@ export default function ProfileOther() {
         }
     };
 
+    // Sayfa ilk yüklendiğinde bilgileri çek
     useEffect(() => {
         fetchUserInfo();
     }, []);
 
+    // izin kısmı
     const pickImage = async () => {
         const resultAccess = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -60,6 +67,7 @@ export default function ProfileOther() {
         }
     };
 
+    // Galeri açılıp fotoğraf seçme ve yükleme
     const openGallery = async () => {
         try {
             let result = await ImagePicker.launchImageLibraryAsync({
@@ -111,6 +119,7 @@ export default function ProfileOther() {
         }
     };
 
+    // CV yükleme fonskiyonu
     const uploadCV = async () => {
         try {
             const result = await DocumentPicker.getDocumentAsync({
@@ -153,6 +162,7 @@ export default function ProfileOther() {
         }
     };
 
+    // CV'yi görüntüle
     const openCvProfile = () => {
         if (cvUrl) {
             Linking.openURL(cvUrl).catch(err => {
@@ -164,6 +174,7 @@ export default function ProfileOther() {
         }
     };
 
+    // CV silme
     const deleteCV = () => {
         Alert.alert(
             "CV'yi Sil",
@@ -204,6 +215,7 @@ export default function ProfileOther() {
         );
     };
 
+    // Profil fotoğrafı silme
     const deletePhoto = () => {
         Alert.alert(
             "Fotoğrafı Sil",
@@ -253,6 +265,7 @@ export default function ProfileOther() {
         );
     }
 
+     // Bilgi satırı
     const InfoItem = ({ label, value }) => (
         <View className="flex-row justify-between items-center bg-[#b6dcfa] p-3 rounded-xl mb-2">
             <Text
@@ -266,6 +279,7 @@ export default function ProfileOther() {
 
     return (
         <ScrollView className="flex-1 bg-gray-100">
+            {/* Header */}
             <View className="relative w-full h-64 rounded-b-3xl overflow-hidden">
                 <Image
                     source={default_image_background}
@@ -280,6 +294,7 @@ export default function ProfileOther() {
                 </View>
             </View>
 
+            {/* Profil Fotoğrafı ve Kullanıcı Bilgileri */}
             <View className="absolute top-56 w-full items-center z-20">
                 <View className="w-full bg-white h-screen rounded-2xl shadow-md p-2 items-center">
                     <View className="relative mb-3 -mt-20">
@@ -303,6 +318,7 @@ export default function ProfileOther() {
                         {userInfo.firstName} {userInfo.lastName}
                     </Text>
 
+                    {/* Kişisel bilgiler*/}
                     <View className="px-5 w-full">
                         <View className="p-5 rounded-2xl bg-[#cfe9fc] shadow-md">
                             <View className="flex-row justify-between items-center mb-5">
@@ -316,6 +332,7 @@ export default function ProfileOther() {
                             />
                         </View>
 
+                        {/* CV İşlemleri */}
                         <View className="mt-5 space-y-4 mb-10">
                             {cvUrl ? (
                                 <View className="flex-row justify-between ">
@@ -345,7 +362,7 @@ export default function ProfileOther() {
                                 </TouchableOpacity>
                             )}
 
-                            {/* Fotoğraf silme butonu da üçlü operatör ile güncellendi */}
+                            {/* Fotoğraf silme butonu */}
                             {photo ? (
                                 <View className="flex-row items-center bg-red-600 p-4 rounded-2xl shadow-md justify-center">
                                     <TouchableOpacity

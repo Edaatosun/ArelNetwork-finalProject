@@ -1,5 +1,5 @@
 
-import { Provider as PaperProvider } from 'react-native-paper'; // Paper Provider
+import { Provider as PaperProvider } from 'react-native-paper'; 
 import Navigation from './src/navigation';
 
 

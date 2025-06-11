@@ -1,29 +1,22 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  Image,
-  TouchableOpacity,
-  RefreshControl,
-  Alert,
-} from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
+import { View, Text, FlatList, Image, TouchableOpacity, RefreshControl, Alert } from 'react-native';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/Ionicons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import { Searchbar, Text as PaperText, Button, Appbar } from 'react-native-paper';
-
 import DefaultJobImage from '../../../assets/images/default_job_image.jpg';
 import { graduateApi } from '../../connector/URL';
 
 export default function MyIntern() {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
+  // staj ilanları, arama metni ve yenileme durumu için state'ler
   const [myInterns, setMyInterns] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
+  // Tarih formatını ayarlayan fonksiyon  (örn: 01.06.2025)
   const formatDate = (dateString) => {
     if (!dateString) return 'Tarih Yok';
     try {
@@ -35,11 +28,13 @@ export default function MyIntern() {
     }
   };
 
+  // Uzun açıklamaları kısaltır (maksimum karakter sayısı kadar)
   const truncateDescription = (text, maxLength) => {
     if (!text) return '';
     return text.length <= maxLength ? text : text.substring(0, maxLength) + '...';
   };
 
+  // kullanıcının oluşturduğu ilanları çeken fonksiyon
   const fetchMyInterns = useCallback(async () => {
     setRefreshing(true);
     try {
@@ -71,6 +66,7 @@ export default function MyIntern() {
     }
   }, []);
 
+  // Kullanıcının staj ilanları arasında arama yapan fonksiyon
   const searchMyInterns = useCallback(async (query) => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -93,18 +89,19 @@ export default function MyIntern() {
         Alert.alert('Hata', 'Arama sonuçları getirilemedi.');
       }
     } catch (error) {
-      console.log('Arama hatası:', error);
       setMyInterns([]);
       Alert.alert('Hata', 'Arama sırasında bir hata oluştu.');
     }
   }, []);
 
+  // Sayfa her odaklandığında staj ilanlarını yeniden getir
   useEffect(() => {
     if (isFocused) {
       fetchMyInterns();
     }
   }, [isFocused, fetchMyInterns]);
 
+  // Arama çubuğu yazısı değiştikçe arama yap ya da tüm ilanları getir
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       if (searchQuery.trim()) {
@@ -117,10 +114,26 @@ export default function MyIntern() {
     return () => clearTimeout(delayDebounce);
   }, [searchQuery, searchMyInterns, fetchMyInterns]);
 
+  // staj ilanı kartı
   const renderInternCard = ({ item: intern }) => {
+    // aktif pasif yakında başlıkları
     const now = new Date();
-    const internEndDate = intern.toDate ? new Date(intern.toDate) : null;
+    const fromDateRaw = intern.fromDate ? new Date(intern.fromDate) : null;
+    const toDateRaw = intern.toDate ? new Date(intern.toDate) : null;
 
+    let statusLabel = 'Aktif';
+    let statusColor = 'bg-green-500';
+
+    if (toDateRaw && toDateRaw < now) {
+      statusLabel = 'Pasif';
+      statusColor = 'bg-red-500';
+    }
+    else if (fromDateRaw && fromDateRaw > now) {
+      statusLabel = 'Yakında';
+      statusColor = 'bg-yellow-500';
+    }
+
+    // detay ekranına yönlendirme fonksiyonu
     const goToInternDetail = () => {
       navigation.navigate('DetailsIntern',
         {
@@ -137,6 +150,11 @@ export default function MyIntern() {
             className="w-full h-44 rounded-t-lg"
             resizeMode="cover"
           />
+
+          {/* Durum etiketi */}
+          <View className={`absolute top-3 right-3 px-3 py-1 rounded-full ${statusColor}`}>
+            <Text className="text-white text-xs font-semibold">{statusLabel}</Text>
+          </View>
         </View>
         <View className="p-4">
           <PaperText variant="titleLarge" className="text-xl font-bold mb-1">
@@ -200,7 +218,7 @@ export default function MyIntern() {
         />
         <Appbar.Content title="Staj İlanlarım" titleStyle={{ color: 'white' }} />
       </Appbar.Header>
-
+      {/* Arama kutusu */}
       <Searchbar
         placeholder="Ara..."
         onChangeText={setSearchQuery}

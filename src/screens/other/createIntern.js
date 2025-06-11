@@ -40,6 +40,7 @@ export default function CreateIntern() {
         "Sanat", "Medya", "Hukuk", "Danışmanlık", "Diğer"
     ];
 
+    // Bölüm seçme fonksiyonu (checkbox'larla çalışır)
     const handleFieldSelection = (field) => {
         if (selectedFields.includes(field)) {
             setSelectedFields(selectedFields.filter(f => f !== field));
@@ -48,6 +49,7 @@ export default function CreateIntern() {
         }
     };
 
+    // Başlangıç tarihi değiştiğinde çağrılan fonksiyon
     const onFromDateChange = (event, selectedDate) => {
         if (event.type === 'dismissed') {
             setShowFromDatePicker(false);
@@ -72,6 +74,7 @@ export default function CreateIntern() {
         }
     };
 
+    // Bitiş tarihi değiştiğinde çağrılan fonksiyon
     const onToDateChange = (event, selectedDate) => {
         if (event.type === 'dismissed') {
             setShowToDatePicker(false);
@@ -89,6 +92,7 @@ export default function CreateIntern() {
         setToDate(currentDate.toISOString().split('T')[0]);
     };
 
+    // Staj ilanı oluşturma fonksiyonu
     const handleCreateIntern = async () => {
         if (!internTitle || !companyName || !location || !fromDate || !toDate || !description || selectedFields.length === 0) {
             Alert.alert('Hata', 'Lütfen tüm alanları doldurun ve en az bir bölüm seçin.');
@@ -135,6 +139,7 @@ export default function CreateIntern() {
         }
     };
 
+    // Klavye açıkken ekranın alta kaymasını sağlama
     useEffect(() => {
         const showListener = Keyboard.addListener('keyboardDidShow', e => setKeyboardHeight(e.endCoordinates.height));
         const hideListener = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
@@ -144,6 +149,7 @@ export default function CreateIntern() {
         };
     }, []);
 
+    // Tarih görünümü için 
     const displayFromDate = fromDate ? new Date(fromDate).toLocaleDateString('tr-TR') : '';
     const displayToDate = toDate ? new Date(toDate).toLocaleDateString('tr-TR') : '';
 
@@ -264,7 +270,7 @@ export default function CreateIntern() {
                     </TouchableOpacity>
                 </ScrollView>
             </View>
-
+            {/* Bölüm seçimi için portal */}
             <Portal>
                 <Dialog visible={showFieldDialog} onDismiss={() => setShowFieldDialog(false)} className="rounded-lg">
                     <Dialog.Title className="text-lg font-bold text-gray-800">Bölüm Seçin</Dialog.Title>

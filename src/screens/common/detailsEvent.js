@@ -1,12 +1,11 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Animated, ScrollView, ActivityIndicator, Alert, Image, Dimensions, Linking, Modal } from 'react-native'; // Linking eklendi
+import { View, Text, TouchableOpacity, Animated, ScrollView, ActivityIndicator, Alert, Image, Modal } from 'react-native'; 
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { commonApi, graduateApi } from "../../connector/URL";
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import DefaultJobImage from '../../../assets/images/default_job_image.jpg';
-import * as DocumentPicker from 'expo-document-picker';
 
 
 export default function DetailsEvent() {
@@ -22,8 +21,12 @@ export default function DetailsEvent() {
 
     const [isEventOwner, setIsEventOwner] = useState(false);
     const [userType, setUserType] = useState(null);
+    // ilan tarihi geçmiş mi 
     const isExpired = event?.toDate ? new Date(event.toDate) < new Date() : false;
+    // ilan başlangıç tarihi başlamış mı?
+    const isUpcoming = event?.fromDate ? new Date(event.fromDate) > new Date() : false;
 
+    // userType ı alıyoruz sayfa açılır açılmaz
     useEffect(() => {
         const getUserType = async () => {
             const type = await AsyncStorage.getItem('userType');
@@ -32,28 +35,28 @@ export default function DetailsEvent() {
         getUserType();
     }, []);
 
-
+    // userType ve token varsa fetche gidiyor
     useFocusEffect(
         useCallback(() => {
 
-            const fetchData = async () => {
-                await fetchEventDetails();
+            if (!userType) return;
+            console.log("userType", userType);
 
+            const fetchData = async () => {
                 const localToken = await AsyncStorage.getItem("token");
+                if (!localToken) return;
+
+                await fetchEventDetails(localToken);
 
                 if (userType !== "student") {
                     await checkIsOwner(localToken);
                 } else {
-                    console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaelse");
                     setIsEventOwner(false);
                 }
 
-                console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-
-
                 await checkIfApplied(localToken);
             };
-
+            //fetchlerr
             const fetchEventDetails = async () => {
                 try {
                     setLoading(true);
@@ -68,7 +71,6 @@ export default function DetailsEvent() {
 
                     const eventData = response.data.event;
                     setEvent(eventData);
-                    console.log("İlan Verisi:", eventData);
                 } catch (error) {
                     console.error("İlan verisi alınamadı:", error);
                     setEvent(null);
@@ -95,10 +97,8 @@ export default function DetailsEvent() {
                     if (response.status === 200) {
                         const isOwner = response.data.isOwner;
                         setIsEventOwner(isOwner);
-                        console.log("İlan sahibi:", isOwner);
                     } else {
                         setIsEventOwner(false);
-                        console.log("İlan sahibi değil: false");
                     }
                 } catch (error) {
                     console.error("İlan sahibi kontrolü sırasında hata:", error);
@@ -115,7 +115,6 @@ export default function DetailsEvent() {
 
                         return;
                     }
-                    console.log("hdagsfhjg");
                     const response = await commonApi.get(`/check/myEvent/${item_id}`, {
                         headers: {
                             'Authorization': `Bearer ${localToken}`,
@@ -137,7 +136,6 @@ export default function DetailsEvent() {
                     if (error.response && error.response.status === 404) {
                         setIsApplied(false);
 
-                        console.log("Başvuru bulunamadı (404).");
                     } else {
                         setIsApplied(false);
 
@@ -157,6 +155,7 @@ export default function DetailsEvent() {
         }, [item_id, userType])
     );
 
+    // animasyon için 
     useEffect(() => {
         Animated.timing(fadeAnim, {
             toValue: 1,
@@ -165,21 +164,19 @@ export default function DetailsEvent() {
         }).start();
     }, [fadeAnim]);
 
+    //Katıl fonskiyonu
     const handleApply = async () => {
-        setLoading(true); // Yükleme durumunu başlat
-
+        setLoading(true);
         try {
-            // JSON formatında body oluştur
             const body = {
                 _id: item_id
             };
             const localToken = await AsyncStorage.getItem("token");
-            console.log("Gönderilen JSON:", body); // Debug için
 
             const response = await commonApi.post(`/apply/event`, body, {
                 headers: {
                     'Authorization': `Bearer ${localToken}`,
-                    'Content-Type': 'application/json', // JSON gönderdiğimiz için gerekli
+                    'Content-Type': 'application/json',
                 },
             });
 
@@ -198,11 +195,14 @@ export default function DetailsEvent() {
                 Alert.alert("Hata", 'Beklenmeyen bir hata oluştu.');
             }
         } finally {
-            setLoading(false); // Yükleme durumunu kapat
+            setLoading(false);
         }
     };
 
-
+    // renderRichText: Metni parçalayıp, düzenli şekilde <Text> bileşenleri olarak ekrana basar
+    // Parametreler:
+    // - text: Gösterilecek metin
+    // - type: Liste mi yoksa paragraf mı olduğunu belirtir
     const renderRichText = (text, type = 'paragraph') => {
         if (!text) return null;
         const paragraphs = text.split('\n').filter(p => p.trim() !== '');
@@ -235,14 +235,12 @@ export default function DetailsEvent() {
         );
     }
 
+    //edit  moddaki silme işlemi
     const handleDelete = async () => {
         try {
             setLoading(true);
-            console.log("heyyyy");
             setDeleteModalVisible(false);
             const localToken = await AsyncStorage.getItem("token");
-            console.log()
-            console.log(event._id);
             const response = await graduateApi.delete(`/event/${event._id}`, {
                 headers: {
                     'Authorization': `Bearer ${localToken}`,
@@ -260,8 +258,9 @@ export default function DetailsEvent() {
         }
     };
 
+    //katılımı iptal et
     const handleCancelApplication = async () => {
-        setLoading(true); // Yükleme durumunu başlat
+        setLoading(true); 
 
         try {
 
@@ -269,7 +268,6 @@ export default function DetailsEvent() {
                 _id: item_id
             };
             const localToken = await AsyncStorage.getItem("token");
-            console.log("İptal Edilecek JSON:", body);
 
             const response = await commonApi.post(`/cancel/event`, body, {
                 headers: {
@@ -293,7 +291,7 @@ export default function DetailsEvent() {
                 Alert.alert("Hata", 'Beklenmeyen bir hata oluştu.');
             }
         } finally {
-            setLoading(false); // Yükleme durumunu kapat
+            setLoading(false); 
         }
     };
 
@@ -391,6 +389,10 @@ export default function DetailsEvent() {
                     {isExpired ? (
                         <View className="bg-gray-400 p-4 rounded-lg items-center justify-center">
                             <Text className="text-white font-bold text-lg">İlan süresi dolmuştur</Text>
+                        </View>
+                    ) : isUpcoming ? (
+                        <View className="bg-yellow-500 p-4 rounded-lg items-center justify-center">
+                            <Text className="text-white font-bold text-lg">İlan henüz açılmamıştır</Text>
                         </View>
                     ) : isApplied ? (
                         <TouchableOpacity
