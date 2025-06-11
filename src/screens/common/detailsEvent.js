@@ -14,8 +14,9 @@ export default function DetailsEvent() {
     const { item_id } = route.params;
     const isEditMode = route.params?.isEditMode || false;
     const fadeAnim = useRef(new Animated.Value(0)).current;
+
     const [event, setEvent] = useState(null);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [isApplied, setIsApplied] = useState(false);
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 
@@ -59,7 +60,6 @@ export default function DetailsEvent() {
             //fetchlerr
             const fetchEventDetails = async () => {
                 try {
-                    setLoading(true);
                     const localToken = await AsyncStorage.getItem("token");
 
                     const response = await commonApi.get(`/get/event/${item_id}`, {
@@ -75,9 +75,7 @@ export default function DetailsEvent() {
                     console.error("İlan verisi alınamadı:", error);
                     setEvent(null);
                     Alert.alert("Hata", "İlan detayları yüklenirken bir sorun oluştu.");
-                } finally {
-                    setLoading(false);
-                }
+                } 
             };
 
             const checkIsOwner = async (localToken) => {
@@ -141,6 +139,8 @@ export default function DetailsEvent() {
 
                         Alert.alert("Hata", "Başvuru durumu kontrol edilirken bir sorun oluştu.");
                     }
+                }finally {
+                    setLoading(false);
                 }
             };
 

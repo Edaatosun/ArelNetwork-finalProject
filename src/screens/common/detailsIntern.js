@@ -60,7 +60,6 @@ export default function DetailsIntern() {
             //fetchlerr
             const fetchInternDetails = async () => {
                 try {
-                    setLoading(true);
                     const localToken = await AsyncStorage.getItem("token");
 
                     const response = await commonApi.get(`/get/intern/${item_id}`, {
@@ -76,8 +75,6 @@ export default function DetailsIntern() {
                     console.error("İlan verisi alınamadı:", error);
                     setIntern(null);
                     Alert.alert("Hata", "İlan detayları yüklenirken bir sorun oluştu.");
-                } finally {
-                    setLoading(false);
                 }
             };
 
@@ -146,6 +143,8 @@ export default function DetailsIntern() {
                         setResumeData(null);
                         Alert.alert("Hata", "Başvuru durumu kontrol edilirken bir sorun oluştu.");
                     }
+                } finally {
+                    setLoading(false);
                 }
             };
 

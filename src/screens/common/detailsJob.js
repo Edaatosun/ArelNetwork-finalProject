@@ -15,7 +15,7 @@ export default function DetailsJob() {
     const isEditMode = route.params?.isEditMode || false;
 
     const [job, setJob] = useState(null);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [isApplied, setIsApplied] = useState(false);
     const [resumeData, setResumeData] = useState(null);
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -53,12 +53,12 @@ export default function DetailsJob() {
             }
 
             await checkIfApplied(localToken);
+
         };
 
         //fetchlerr
         const fetchJobDetails = async (token) => {
             try {
-                setLoading(true);
                 const response = await commonApi.get(`/get/job/${item_id}`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -69,9 +69,7 @@ export default function DetailsJob() {
             } catch (error) {
                 Alert.alert("Hata", "İlan detayları yüklenirken bir sorun oluştu.");
                 setJob(null);
-            } finally {
-                setLoading(false);
-            }
+            } 
         };
 
         const checkIsOwner = async (token) => {
@@ -117,6 +115,8 @@ export default function DetailsJob() {
                         "Başvuru durumu kontrol edilirken bir sorun oluştu."
                     );
                 }
+            }finally {
+                setLoading(false);
             }
         };
 
